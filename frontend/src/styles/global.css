@@ -1,0 +1,937 @@
+/* ==========================================================================
+   Akkodis Employee Profile Management
+   Global Design System
+   ========================================================================== */
+
+:root {
+  /* Layout */
+  --sidebar-width: 190px;
+  --header-height: 58px;
+  --content-max-width: 1400px;
+
+  /* Spacing */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+
+  /* Colors */
+  --color-bg: #f4f8fc;
+  --color-surface: #ffffff;
+  --color-border: #dce6f0;
+  --color-border-focus: #0878f9;
+
+  --color-text: #10233f;
+  --color-text-muted: #63758c;
+  --color-text-muted-light: #8fa0b4;
+
+  --color-primary: #0878f9;
+  --color-primary-hover: #0068dd;
+
+  --color-success: #059669;
+  --color-success-bg: #ecfdf5;
+
+  --color-danger: #dc2626;
+  --color-danger-bg: #fef2f2;
+
+  --color-sidebar-bg: #ffffff;
+  --color-sidebar-active-bg: #e4f1ff;
+  --color-sidebar-active-text: #0878f9;
+
+  /* Typography */
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, Arial, sans-serif;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-bold: 700;
+
+  --leading-tight: 1.25;
+  --leading-normal: 1.5;
+
+  /* Accessibility */
+  --focus-ring: 2px solid var(--color-border-focus);
+  --focus-offset: 2px;
+}
+
+
+/* ==========================================================================
+   Base
+   ========================================================================== */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+
+  color: var(--color-text);
+  background: var(--color-bg);
+
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+
+/* ==========================================================================
+   Skip Link
+   ========================================================================== */
+
+.skip-link {
+  position: absolute;
+  top: var(--space-2);
+  left: var(--space-4);
+
+  z-index: 10000;
+
+  padding: var(--space-2) var(--space-4);
+
+  background: var(--color-primary);
+  color: #ffffff;
+
+  font-weight: var(--font-medium);
+
+  border-radius: 4px;
+
+  text-decoration: none;
+
+  transform: translateY(-150%);
+  transition: transform 0.15s;
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+
+/* ==========================================================================
+   Main Application Layout
+   ========================================================================== */
+
+.app-layout {
+  display: flex;
+
+  min-height: 100vh;
+
+  background: var(--color-bg);
+}
+
+
+/* ==========================================================================
+   Top Header
+   ========================================================================== */
+
+.top-header {
+  position: fixed;
+
+  top: 0;
+  left: 0;
+  right: 0;
+
+  z-index: 1040;
+
+  height: var(--header-height);
+
+  display: flex;
+  align-items: center;
+
+  padding: 0 24px;
+
+  background: linear-gradient(
+    90deg,
+    #075594 0%,
+    #06477f 55%,
+    #052f59 100%
+  );
+
+  border-bottom: none;
+
+  box-shadow: 0 2px 6px rgba(5, 47, 89, 0.16);
+}
+
+.top-header h1 {
+  margin: 0;
+
+  color: #ffffff;
+
+  font-size: 18px;
+  font-weight: 600;
+
+  line-height: 1.2;
+}
+
+
+/* ==========================================================================
+   Sidebar
+   ========================================================================== */
+
+.sidebar {
+  position: fixed;
+
+  top: var(--header-height);
+  left: 0;
+  bottom: 0;
+
+  z-index: 1030;
+
+  width: var(--sidebar-width);
+  min-width: var(--sidebar-width);
+
+  display: flex;
+  flex-direction: column;
+
+  background: var(--color-sidebar-bg);
+
+  border-right: 1px solid var(--color-border);
+}
+
+
+/*
+  Branding is displayed in the top blue header,
+  so hide the older sidebar title.
+*/
+
+.sidebar-brand {
+  display: none;
+}
+
+.sidebar-nav {
+  flex: 1;
+
+  padding: 14px 8px;
+}
+
+.sidebar-link {
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+
+  min-height: 42px;
+
+  margin-bottom: 6px;
+
+  padding: 10px 14px;
+
+  color: #52667e;
+
+  font-size: 14px;
+  font-weight: 400;
+
+  text-decoration: none;
+
+  border-radius: 6px;
+
+  transition: background 0.15s, color 0.15s;
+}
+
+.sidebar-link:hover {
+  background: #f0f6fc;
+  color: var(--color-primary);
+}
+
+.sidebar-link.active {
+  background: var(--color-sidebar-active-bg);
+  color: var(--color-sidebar-active-text);
+
+  font-weight: 600;
+}
+
+.sidebar-link-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 22px;
+
+  font-size: 17px;
+
+  opacity: 0.95;
+}
+
+
+/* ==========================================================================
+   Main Wrapper
+   ========================================================================== */
+
+.main-wrapper {
+  flex: 1;
+
+  margin-left: var(--sidebar-width);
+
+  display: flex;
+  flex-direction: column;
+
+  min-width: 0;
+  min-height: 100vh;
+
+  background: var(--color-bg);
+}
+
+
+/* ==========================================================================
+   Main Content
+   ========================================================================== */
+
+.main-content {
+  flex: 1;
+
+  width: 100%;
+  max-width: var(--content-max-width);
+
+  padding: 24px 28px 32px;
+
+  margin-top: var(--header-height);
+
+  background: var(--color-bg);
+}
+
+
+/* ==========================================================================
+   Page Structure
+   ========================================================================== */
+
+.page-title {
+  margin-top: 0;
+  margin-bottom: 4px;
+
+  color: var(--color-text);
+
+  font-size: 26px;
+  font-weight: 700;
+
+  line-height: var(--leading-tight);
+
+  letter-spacing: -0.025em;
+}
+
+.page-header-row {
+  display: flex;
+  flex-wrap: wrap;
+
+  justify-content: space-between;
+  align-items: center;
+
+  gap: var(--space-4);
+
+  margin-bottom: var(--space-5);
+}
+
+.text-muted {
+  color: var(--color-text-muted) !important;
+}
+
+
+/* ==========================================================================
+   Dashboard
+   ========================================================================== */
+
+.page-dashboard {
+  width: 100%;
+}
+
+.page-dashboard > .text-muted {
+  margin-top: 0;
+}
+
+
+/* ==========================================================================
+   Dashboard Stat Card
+   ========================================================================== */
+
+.stat-card {
+  position: relative;
+
+  height: 100%;
+  min-height: 110px;
+
+  padding: 18px 20px;
+
+  overflow: hidden;
+
+  background: linear-gradient(
+    135deg,
+    #e5f3ff 0%,
+    #d7ecff 100%
+  );
+
+  border: 1px solid #c6e1fa;
+
+  border-radius: 8px;
+
+  box-shadow: none;
+
+  transition: box-shadow 0.15s, transform 0.15s;
+}
+
+.stat-card:hover {
+  transform: translateY(-1px);
+
+  box-shadow: 0 5px 15px rgba(38, 113, 179, 0.1);
+}
+
+.stat-card-label {
+  margin-top: 0;
+  margin-bottom: 5px;
+
+  color: #435a73;
+
+  font-size: 12px;
+  font-weight: 600;
+
+  text-transform: none;
+
+  letter-spacing: 0;
+}
+
+.stat-card-value {
+  margin-top: 0;
+  margin-bottom: 0;
+
+  color: #10233f;
+
+  font-size: 30px;
+  font-weight: 700;
+
+  line-height: 1.1;
+
+  letter-spacing: -0.02em;
+}
+
+.stat-card-link {
+  display: inline-block;
+
+  margin-top: 8px;
+
+  color: var(--color-primary);
+
+  font-size: 13px;
+  font-weight: 500;
+
+  text-decoration: none;
+}
+
+.stat-card-link:hover {
+  color: var(--color-primary-hover);
+
+  text-decoration: underline;
+}
+
+
+/* ==========================================================================
+   Cards
+   ========================================================================== */
+
+.card {
+  background: var(--color-surface);
+
+  border: 1px solid var(--color-border);
+
+  border-radius: 7px;
+
+  box-shadow: 0 2px 5px rgba(23, 55, 88, 0.05);
+}
+
+.card-header {
+  padding: 15px 18px;
+
+  background: #ffffff;
+
+  border-bottom: 1px solid var(--color-border);
+}
+
+.card-header .card-title {
+  margin: 0;
+
+  color: var(--color-text);
+
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.card-body {
+  padding: 18px;
+}
+
+
+/* ==========================================================================
+   Employee Page
+   ========================================================================== */
+
+.page-employees {
+  width: 100%;
+}
+
+.page-employees .page-header-row {
+  margin-bottom: 16px;
+}
+
+
+/* ==========================================================================
+   Search Box / Form Controls
+   ========================================================================== */
+
+.form-control {
+  min-height: 38px;
+
+  padding: 8px 12px;
+
+  color: var(--color-text);
+
+  font-size: 14px;
+
+  background: #ffffff;
+
+  border: 1px solid #cfdce9;
+
+  border-radius: 5px;
+
+  outline: none;
+
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.form-control::placeholder {
+  color: #8798aa;
+}
+
+.form-control:hover {
+  border-color: #b7cadc;
+}
+
+.form-control:focus {
+  background: #ffffff;
+
+  border-color: var(--color-primary);
+
+  box-shadow: 0 0 0 3px rgba(8, 120, 249, 0.1);
+
+  outline: none;
+}
+
+.form-select {
+  min-height: 38px;
+
+  color: var(--color-text);
+
+  background-color: #ffffff;
+
+  border: 1px solid #cfdce9;
+
+  border-radius: 5px;
+}
+
+
+/* ==========================================================================
+   Employee Table
+   ========================================================================== */
+
+.table-responsive {
+  width: 100%;
+
+  overflow-x: auto;
+
+  background: #ffffff;
+
+  border-radius: 6px;
+}
+
+.table {
+  width: 100%;
+
+  margin-bottom: 0;
+
+  color: #1b3049;
+
+  background: #ffffff;
+
+  border-collapse: collapse;
+}
+
+.table thead th,
+.table th {
+  padding: 10px 14px;
+
+  color: #334e6d;
+
+  background: #eaf5ff;
+
+  border-bottom: 1px solid #d3e5f5;
+
+  font-size: 11px;
+  font-weight: 700;
+
+  text-transform: none;
+
+  letter-spacing: 0.01em;
+
+  text-align: left;
+
+  white-space: nowrap;
+}
+
+.table tbody td,
+.table td {
+  padding: 11px 14px;
+
+  color: #223c57;
+
+  background: #ffffff;
+
+  border-bottom: 1px solid #e5edf5;
+
+  font-size: 13px;
+
+  vertical-align: middle;
+}
+
+.table tbody tr {
+  transition: background 0.15s;
+}
+
+.table tbody tr:hover td {
+  background: #f7fbff;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.table-light {
+  background: #eaf5ff;
+}
+
+
+/* ==========================================================================
+   Buttons
+   ========================================================================== */
+
+.btn {
+  border-radius: 5px;
+
+  font-weight: 500;
+
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    color 0.15s,
+    box-shadow 0.15s;
+}
+
+.btn-primary {
+  color: #ffffff;
+
+  background: var(--color-primary);
+
+  border-color: var(--color-primary);
+
+  box-shadow: none;
+}
+
+.btn-primary:hover {
+  color: #ffffff;
+
+  background: var(--color-primary-hover);
+
+  border-color: var(--color-primary-hover);
+}
+
+.btn-outline-primary {
+  color: var(--color-primary);
+
+  background: #eef7ff;
+
+  border-color: #b8d8f7;
+}
+
+.btn-outline-primary:hover {
+  color: #ffffff;
+
+  background: var(--color-primary);
+
+  border-color: var(--color-primary);
+}
+
+.btn-outline-danger {
+  color: var(--color-danger);
+
+  background: #ffffff;
+
+  border-color: #efaaaf;
+}
+
+.btn-outline-danger:hover {
+  color: #ffffff;
+
+  background: var(--color-danger);
+
+  border-color: var(--color-danger);
+}
+
+
+/* ==========================================================================
+   Empty States
+   ========================================================================== */
+
+.empty-state {
+  padding: 36px 24px;
+
+  text-align: center;
+
+  background: #ffffff;
+
+  border-radius: 7px;
+}
+
+.empty-state-icon {
+  margin-bottom: var(--space-4);
+
+  font-size: 2.5rem;
+
+  line-height: 1;
+
+  opacity: 0.5;
+}
+
+.empty-state-title {
+  margin-bottom: var(--space-2);
+
+  color: var(--color-text);
+
+  font-size: var(--text-lg);
+  font-weight: var(--font-medium);
+}
+
+.empty-state-message {
+  max-width: 360px;
+
+  margin-left: auto;
+  margin-right: auto;
+
+  color: var(--color-text-muted);
+
+  font-size: var(--text-sm);
+
+  line-height: var(--leading-normal);
+}
+
+.empty-state-action {
+  margin-top: var(--space-6);
+}
+
+.empty-state--error .empty-state-title {
+  color: var(--color-danger);
+}
+
+
+/* ==========================================================================
+   Loading
+   ========================================================================== */
+
+.loading-state {
+  min-height: 200px;
+
+  display: flex;
+  flex-direction: column;
+
+  align-items: center;
+  justify-content: center;
+
+  padding: var(--space-10);
+
+  background: #ffffff;
+
+  border-radius: 7px;
+}
+
+.loading-state-label {
+  margin-top: var(--space-4);
+
+  color: var(--color-text-muted);
+
+  font-size: var(--text-sm);
+}
+
+
+/* ==========================================================================
+   Alerts
+   ========================================================================== */
+
+.form-alert-error {
+  padding: var(--space-3) var(--space-4);
+
+  margin-top: var(--space-3);
+
+  color: var(--color-danger);
+
+  font-size: var(--text-sm);
+
+  background: var(--color-danger-bg);
+
+  border-radius: 6px;
+}
+
+
+/* ==========================================================================
+   Toast
+   ========================================================================== */
+
+.global-toast {
+  position: fixed;
+
+  top: calc(var(--header-height) + 16px);
+  right: 16px;
+
+  z-index: 9999;
+
+  max-width: 380px;
+}
+
+
+/* ==========================================================================
+   Accessibility
+   ========================================================================== */
+
+.btn:focus-visible,
+.form-control:focus-visible,
+.form-select:focus-visible,
+.sidebar-link:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+
+/* ==========================================================================
+   Bootstrap-like Spacing Helpers
+   ========================================================================== */
+
+.mb-0 {
+  margin-bottom: 0 !important;
+}
+
+.mb-4 {
+  margin-bottom: 1.5rem !important;
+}
+
+.mt-4 {
+  margin-top: 1.5rem !important;
+}
+
+
+/* ==========================================================================
+   Responsive
+   ========================================================================== */
+
+@media (max-width: 991.98px) {
+  .sidebar {
+    top: var(--header-height);
+
+    transform: translateX(-100%);
+
+    transition: transform 0.2s;
+  }
+
+  .sidebar.show {
+    transform: translateX(0);
+  }
+
+  .main-wrapper {
+    margin-left: 0;
+  }
+
+  .main-content {
+    padding: 20px;
+
+    margin-top: var(--header-height);
+  }
+}
+
+
+@media (max-width: 575.98px) {
+  .top-header {
+    height: 54px;
+
+    padding: 0 16px;
+  }
+
+  .top-header h1 {
+    font-size: 15px;
+  }
+
+  .main-content {
+    padding: 16px;
+
+    margin-top: 54px;
+  }
+
+  .page-title {
+    font-size: 22px;
+  }
+
+  .stat-card {
+    min-height: 95px;
+  }
+
+  .card-body {
+    padding: 14px;
+  }
+
+  .table-responsive {
+    font-size: var(--text-sm);
+  }
+
+  .table {
+    min-width: 650px;
+  }
+}
+/* ==========================================================================
+   Akkodis Header Branding
+   ========================================================================== */
+
+.top-header-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.top-header-brand img {
+  display: block;
+  width: auto;
+  max-height: 30px;
+  object-fit: contain;
+}
+
+.top-header-title {
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+}
