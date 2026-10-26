@@ -51,6 +51,10 @@ def create(db: Session, payload: EmployeeCreate) -> Employee:
         full_name=payload.full_name,
         email=payload.email,
         department=payload.department,
+        current_role=payload.current_role,
+        years_of_experience=payload.years_of_experience,
+        location=payload.location,
+    
     )
     db.add(obj)
     db.commit()
