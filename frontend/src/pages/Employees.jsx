@@ -14,6 +14,102 @@ import Table from '../components/Table'
 import LoadingSpinner from '../components/LoadingSpinner'
 import EmptyState from '../components/EmptyState'
 
+
+const EXPORT_FIELDS = [
+  { header: 'Full Name', key: 'full_name' },
+  { header: 'Department', key: 'department' },
+  { header: 'Current Role', key: 'current_role' },
+  { header: 'Email ID', key: 'email' },
+  { header: 'Skills', key: 'skills' },
+  { header: 'Certification', key: 'certification' },
+  { header: 'Education', key: 'education' },
+  { header: 'Years of Experience', key: 'years_of_experience' },
+  { header: 'Location', key: 'location' },
+]
+
+function getExportValue(employee, key) {
+  const value = employee[key]
+
+  if (value == null) return ''
+  if (Array.isArray(value)) return value.join(', ')
+  if (typeof value === 'object') return JSON.stringify(value)
+
+  return String(value)
+}
+
+function downloadBlob(content, type, filename) {
+  const blob = new Blob([content], { type })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+
+  link.href = url
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  URL.revokeObjectURL(url)
+}
+
+function exportEmployeesCSV(employees) {
+  const escapeCSV = (value) =>
+    `"${String(value).replace(/"/g, '""')}"`
+
+  const rows = [
+    EXPORT_FIELDS.map((field) => escapeCSV(field.header)),
+    ...employees.map((employee) =>
+      EXPORT_FIELDS.map((field) =>
+        escapeCSV(getExportValue(employee, field.key))
+      )
+    ),
+  ]
+
+  // UTF-8 BOM helps Excel display international characters correctly.
+  const csv = '\uFEFF' + rows.map((row) => row.join(',')).join('\r\n')
+
+  downloadBlob(
+    csv,
+    'text/csv;charset=utf-8;',
+    'employees.csv'
+  )
+}
+
+function exportEmployeesPDF(employees) {
+  const doc = new jsPDF({
+    orientation: 'landscape',
+    unit: 'mm',
+    format: 'a3',
+  })
+
+  doc.setFontSize(16)
+  doc.text('Employee Report', 14, 15)
+
+  doc.setFontSize(9)
+  doc.text(`Total employees: ${employees.length}`, 14, 22)
+
+  autoTable(doc, {
+    startY: 28,
+    head: [EXPORT_FIELDS.map((field) => field.header)],
+    body: employees.map((employee) =>
+      EXPORT_FIELDS.map((field) =>
+        getExportValue(employee, field.key)
+      )
+    ),
+    styles: {
+      fontSize: 8,
+      cellPadding: 2,
+      overflow: 'linebreak',
+    },
+    headStyles: {
+      fillColor: [22, 84, 145],
+    },
+    margin: { left: 10, right: 10 },
+    horizontalPageBreak: true,
+    horizontalPageBreakRepeat: 0,
+  })
+
+  doc.save('employees.pdf')
+}
+
 function validateEmail(value) {
   if (!value || !value.trim()) {
     return 'Email is required.'
@@ -56,11 +152,6 @@ export default function Employees() {
     full_name: '',
     email: '',
     department: '',
-    current_role: '',
-    years_of_experience: '',
-    location: '',
-    industry: '',
-    other_industry: '',
   })
 
   const [formErrors, setFormErrors] = useState({})
@@ -73,11 +164,6 @@ export default function Employees() {
       full_name: '',
       email: '',
       department: '',
-      current_role: '',
-      years_of_experience: '',
-      location: '',
-      industry: '',
-      other_industry: ''
     })
 
     setFormErrors({})
@@ -88,15 +174,10 @@ export default function Employees() {
     setEditingId(emp.id)
 
     setForm({
-      employee_id: emp.employee_id || '',
-      full_name: emp.full_name || '',
-      email: emp.email || '',
-      department: emp.department || '',
-      current_role: emp.current_role || '',
-      years_of_experience: emp.years_of_experience ?? '',
-      location: emp.location || '',
-      industry: emp.industry || '',
-      other_industry: emp.other_industry || '',
+      employee_id: emp.employee_id,
+      full_name: emp.full_name,
+      email: emp.email,
+      department: emp.department,
     })
 
     setFormErrors({})
@@ -189,28 +270,14 @@ export default function Employees() {
       full_name: form.full_name.trim(),
       email: form.email.trim(),
       department: form.department.trim(),
-      current_role: form.current_role.trim() || null,
-      years_of_experience: experience,
-      location: form.location.trim() || null,
-      industry: form.industry || null,
-
-      other_industry:
-          form.industry === 'Others'
-            ? form.other_industry.trim()
-            : null,
     }
 
     const promise = editingId
       ? updateEmployee(editingId, {
-          full_name: payload.full_name,
-          email: payload.email,
-          department: payload.department,
-          current_role: payload.current_role,
-          years_of_experience: payload.years_of_experience,
-          location: payload.location,
-          industry: payload.industry,
-          other_industry: payload.other_industry,
-        })
+        full_name: payload.full_name,
+        email: payload.email,
+        department: payload.department,
+      })
       : createEmployee(payload)
 
     promise
@@ -262,20 +329,9 @@ export default function Employees() {
       .catch(() => {})
   }
 
-  // Search across all employee fields, including the new fields.
-  const searchText = search.trim().toLowerCase()
-
-  const searchableFields = [
-    'employee_id',
-    'full_name',
-    'email',
-    'department',
-    'current_role',
-    'years_of_experience',
-    'location',
-    'industry',
-    'other_industry',
-  ]
+  const searchText = search
+    .trim()
+    .toLowerCase()
 
   const filteredEmployees = list.filter((employee) => {
     if (!searchText) {
@@ -306,22 +362,6 @@ export default function Employees() {
     {
       key: 'department',
       label: 'Department',
-    },
-    {
-      key: 'current_role',
-      label: 'Current Role',
-    },
-    {
-      key: 'years_of_experience',
-      label: 'Years of Experience',
-    },
-    {
-      key: 'location',
-      label: 'Location',
-    },
-    {
-      key: 'industry',
-      label: 'Industry',
     },
     {
       key: 'actions',
@@ -437,74 +477,6 @@ export default function Employees() {
                 />
               </div>
 
-              <div className="col-md-6">
-                <Input
-                  label="Current Role"
-                  name="current_role"
-                  value={form.current_role}
-                  onChange={handleChange}
-                  placeholder="e.g. QA Engineer"
-                />
-              </div>
-
-              <div className="col-md-6">
-                <Input
-                  label="Years of Experience"
-                  name="years_of_experience"
-                  type="number"
-                  value={form.years_of_experience}
-                  onChange={handleChange}
-                  error={formErrors.years_of_experience}
-                  placeholder="e.g. 5"
-                />
-              </div>
-              <div className="col-md-6">
-  <label className="form-label">
-    Industry / Domain
-  </label>
-
-  <select
-    className="form-select"
-    name="industry"
-    value={form.industry}
-    onChange={handleChange}
-  >
-    <option value="">Select Industry</option>
-    <option value="Banking">Banking</option>
-    <option value="Healthcare">Healthcare</option>
-    <option value="Retail">Retail</option>
-    <option value="Telecom">Telecom</option>
-    <option value="Insurance">Insurance</option>
-    <option value="Manufacturing">Manufacturing</option>
-    <option value="Automotive">Automotive</option>
-    <option value="Education">Education</option>
-    <option value="Others">Others</option>
-  </select>
-</div>
-
-{form.industry === 'Others' && (
-  <div className="col-md-6">
-    <Input
-      label="Other Industry"
-      name="other_industry"
-      value={form.other_industry}
-      onChange={handleChange}
-      placeholder="Enter Industry"
-    />
-  </div>
-)}
-
-              
-
-              <div className="col-md-6">
-                <Input
-                  label="Location"
-                  name="location"
-                  value={form.location}
-                  onChange={handleChange}
-                  placeholder="e.g. Bengaluru"
-                />
-              </div>
             </div>
 
             {formErrors._ && (
@@ -558,7 +530,6 @@ export default function Employees() {
             message="No employee records are available."
             action={
               <Button onClick={openCreate}>
-                Add employee
               </Button>
             }
           />
