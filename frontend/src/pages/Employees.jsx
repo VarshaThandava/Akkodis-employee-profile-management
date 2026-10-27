@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { jsPDF } from 'jspdf'
+import autoTable from 'jspdf-autotable'
 import {
   createEmployee,
   updateEmployee,
@@ -12,6 +14,102 @@ import Card from '../components/Card'
 import Table from '../components/Table'
 import LoadingSpinner from '../components/LoadingSpinner'
 import EmptyState from '../components/EmptyState'
+
+
+const EXPORT_FIELDS = [
+  { header: 'Full Name', key: 'full_name' },
+  { header: 'Department', key: 'department' },
+  { header: 'Current Role', key: 'current_role' },
+  { header: 'Email ID', key: 'email' },
+  { header: 'Skills', key: 'skills' },
+  { header: 'Certification', key: 'certification' },
+  { header: 'Education', key: 'education' },
+  { header: 'Years of Experience', key: 'years_of_experience' },
+  { header: 'Location', key: 'location' },
+]
+
+function getExportValue(employee, key) {
+  const value = employee[key]
+
+  if (value == null) return ''
+  if (Array.isArray(value)) return value.join(', ')
+  if (typeof value === 'object') return JSON.stringify(value)
+
+  return String(value)
+}
+
+function downloadBlob(content, type, filename) {
+  const blob = new Blob([content], { type })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+
+  link.href = url
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  URL.revokeObjectURL(url)
+}
+
+function exportEmployeesCSV(employees) {
+  const escapeCSV = (value) =>
+    `"${String(value).replace(/"/g, '""')}"`
+
+  const rows = [
+    EXPORT_FIELDS.map((field) => escapeCSV(field.header)),
+    ...employees.map((employee) =>
+      EXPORT_FIELDS.map((field) =>
+        escapeCSV(getExportValue(employee, field.key))
+      )
+    ),
+  ]
+
+  // UTF-8 BOM helps Excel display international characters correctly.
+  const csv = '\uFEFF' + rows.map((row) => row.join(',')).join('\r\n')
+
+  downloadBlob(
+    csv,
+    'text/csv;charset=utf-8;',
+    'employees.csv'
+  )
+}
+
+function exportEmployeesPDF(employees) {
+  const doc = new jsPDF({
+    orientation: 'landscape',
+    unit: 'mm',
+    format: 'a3',
+  })
+
+  doc.setFontSize(16)
+  doc.text('Employee Report', 14, 15)
+
+  doc.setFontSize(9)
+  doc.text(`Total employees: ${employees.length}`, 14, 22)
+
+  autoTable(doc, {
+    startY: 28,
+    head: [EXPORT_FIELDS.map((field) => field.header)],
+    body: employees.map((employee) =>
+      EXPORT_FIELDS.map((field) =>
+        getExportValue(employee, field.key)
+      )
+    ),
+    styles: {
+      fontSize: 8,
+      cellPadding: 2,
+      overflow: 'linebreak',
+    },
+    headStyles: {
+      fillColor: [22, 84, 145],
+    },
+    margin: { left: 10, right: 10 },
+    horizontalPageBreak: true,
+    horizontalPageBreakRepeat: 0,
+  })
+
+  doc.save('employees.pdf')
+}
 
 function validateEmail(value) {
   if (!value || !value.trim()) {
@@ -49,6 +147,7 @@ export default function Employees() {
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [formLoading, setFormLoading] = useState(false)
+  const [exportOpen, setExportOpen] = useState(false)
 
   const [form, setForm] = useState({
     employee_id: '',
@@ -164,10 +263,10 @@ export default function Employees() {
 
     const promise = editingId
       ? updateEmployee(editingId, {
-          full_name: payload.full_name,
-          email: payload.email,
-          department: payload.department,
-        })
+        full_name: payload.full_name,
+        email: payload.email,
+        department: payload.department,
+      })
       : createEmployee(payload)
 
     promise
@@ -214,7 +313,7 @@ export default function Employees() {
           'Employee deleted successfully.'
         )
       })
-      .catch(() => {})
+      .catch(() => { })
   }
 
   const searchText = search
@@ -310,10 +409,50 @@ export default function Employees() {
           </p>
         </div>
 
-        <Button onClick={openCreate}>
-          Add employee
-        </Button>
+        <div className="employee-header-actions">
+          <div className="employee-export">
+            <Button
+              type="button"
+              onClick={() => setExportOpen((open) => !open)}
+              disabled={loading || list.length === 0}
+            >
+              Export Employee Details<span aria-hidden="true">▾</span>
+            </Button>
+
+            {exportOpen && (
+              <div className="employee-export-menu">
+                <button
+                  type="button"
+                  className="employee-export-item"
+                  disabled={filteredEmployees.length === 0}
+                  onClick={() => {
+                    exportEmployeesCSV(filteredEmployees)
+                    setExportOpen(false)
+                  }}
+                >
+                  Export as CSV
+                </button>
+
+                <button
+                  type="button"
+                  className="employee-export-item"
+                  disabled={filteredEmployees.length === 0}
+                  onClick={() => {
+                    exportEmployeesPDF(filteredEmployees)
+                    setExportOpen(false)
+                  }}
+                >
+                  Export as PDF
+                </button>
+              </div>
+            )}
+          </div>
+
+          <Button onClick={openCreate}>Add employee</Button>
+        </div>
+
       </div>
+
 
       <div className="mt-4 mb-4">
         <Input
@@ -458,7 +597,7 @@ export default function Employees() {
             message="No employee records are available."
             action={
               <Button onClick={openCreate}>
-                           </Button>
+              </Button>
             }
           />
         </Card>
