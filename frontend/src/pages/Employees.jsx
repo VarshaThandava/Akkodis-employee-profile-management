@@ -307,28 +307,28 @@ export default function Employees() {
       key: 'actions',
       label: 'Actions',
       sortable: false,
-      headerClassName: 'text-end',
+      headerClassName: ' fw-semibold',
+       headerStyle: { fontSize: '1rem', fontWeight: 600 },
       cellClassName: 'text-end',
       render: (row) => (
-        <>
-          <Button
-            size="sm"
-            variant="outline-primary"
-            className="me-1"
-            onClick={() => openEdit(row)}
-          >
-            Edit
-          </Button>
+  <div className="d-flex justify-content-end align-items-center gap-2">
+    <Button
+      size="sm"
+      variant="outline-primary"
+      onClick={() => openEdit(row)}
+    >
+      Edit
+    </Button>
 
-          <Button
-            size="sm"
-            variant="outline-danger"
-            onClick={() => handleDelete(row)}
-          >
-            Delete
-          </Button>
-        </>
-      ),
+    <Button
+      size="sm"
+      variant="outline-danger"
+      onClick={() => handleDelete(row)}
+    >
+      Delete
+    </Button>
+  </div>
+),
     },
   ]
 

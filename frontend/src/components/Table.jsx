@@ -79,6 +79,7 @@ function Table({
                   <th
                     key={column.key}
                     className={column.headerClassName || ''}
+                    style={column.headerStyle}
                     scope="col"
                   >
                     {column.sortable === false ? (
