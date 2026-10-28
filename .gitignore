@@ -1,0 +1,43 @@
+# Environment and secrets - do not commit
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+.env.*.local
+
+# Keep the safe environment template
+!.env.example
+
+# Python
+venv/
+.venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Frontend
+node_modules/
+frontend/node_modules/
+frontend/dist/
+
+# Python / test cache
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+# Local database
+hrms_lite.db
+*.db
