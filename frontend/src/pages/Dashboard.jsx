@@ -50,7 +50,7 @@ export default function Dashboard() {
           <div className="stat-card">
 
             <p className="stat-card-label">
-              Total employees-98
+              Total employees
             </p>
 
             <p className="stat-card-value">

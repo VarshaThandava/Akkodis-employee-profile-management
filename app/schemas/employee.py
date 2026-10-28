@@ -13,6 +13,11 @@ class EmployeeCreate(BaseModel):
     email: EmailStr
     department: str = Field(..., min_length=1, max_length=128)
     current_role: str | None = Field(None, max_length=255)
+
+     # Changed by dileepkolekar: technical skills selected in the UI.
+    technical_skill: list[str] = Field(default_factory=list)
+
+
     years_of_experience: float | None = Field(None, ge=0)
     location: str | None = Field(None, max_length=255)
 
@@ -27,6 +32,10 @@ class EmployeeUpdate(BaseModel):
     department: str | None = Field(None, min_length=1, max_length=128)
 
     current_role: str | None = Field(None, max_length=255)
+
+     # Changed by dileepkolekar: allow technical skills to be updated.
+    technical_skill: list[str] | None = None
+
     years_of_experience: float | None = Field(None, ge=0)
     location: str | None = Field(None, max_length=255)
 
@@ -42,6 +51,10 @@ class EmployeeRead(BaseModel):
     email: str
     department: str
     current_role: str | None = None
+
+      # Changed by dileepkolekar: return technical skills to frontend.
+    technical_skill: list[str] = Field(default_factory=list)
+    
     years_of_experience: float | None = None
     location: str | None = None
     created_at: datetime

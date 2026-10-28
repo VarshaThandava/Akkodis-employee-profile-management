@@ -696,6 +696,17 @@ body {
   border-color: var(--color-danger);
 }
 
+.btn-signout {
+  padding: 0px 0px;
+  color: var(--color-primary);
+  background: #ffffff;
+  font-size: var(--text-sm);
+}
+
+.btn-signout:hover {
+  color: blue;
+  background: var();
+}
 
 /* ==========================================================================
    Empty States
@@ -934,4 +945,133 @@ body {
   font-size: 13px;
   font-weight: 500;
   white-space: nowrap;
+}
+
+
+/* ==========================================================================
+   Employee Export Dropdown
+   ========================================================================== */
+.employee-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.employee-export {
+  position: relative;
+}
+
+.employee-export-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 1050;
+
+  min-width: 225px;
+  padding: var(--space-1);
+
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  
+  box-shadow: 0 4px 12px rgba(16, 35, 63, 0.12);
+}
+
+.employee-export-item {
+  display: block;
+  width: 100%;
+  padding: var(--space-0) var(--space-1);
+
+  color: var(--color-text);
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+
+  font-family: inherit;
+  font-size: var(--text-sm);
+  text-align: left;
+  cursor: pointer;
+}
+
+.employee-export-item:hover:not(:disabled) {
+  color: var(--color-primary);
+  background: var(--color-sidebar-active-bg);
+}
+
+.employee-export-item:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+.employee-export-item:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ==========================================================================
+   Account Logout Dropdown
+   ========================================================================== */
+.account-menu {
+  position: relative;
+  margin-left: auto;
+}
+
+.account-button {
+  color: #ffffff;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.account-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 1100;
+  padding: 8px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 5px;
+}
+
+
+
+/* Updated by dileep - Technical Skill multi-select styles */
+
+.technical-skill-control {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.technical-skill-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.technical-skill-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.55rem;
+  color: #0d47a1;
+  background-color: #e8f1ff;
+  border: 1px solid #c7dcff;
+  border-radius: 0.35rem;
+  font-size: 0.875rem;
+}
+
+.technical-skill-remove {
+  padding: 0;
+  color: #0d47a1;
+  background: transparent;
+  border: 0;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.technical-skill-remove:hover {
+  color: #b42318;
 }
