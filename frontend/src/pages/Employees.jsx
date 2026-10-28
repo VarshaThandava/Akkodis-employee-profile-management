@@ -16,15 +16,13 @@ import Table from '../components/Table'
 import LoadingSpinner from '../components/LoadingSpinner'
 import EmptyState from '../components/EmptyState'
 
-
+// Defines the employee fields and column headers used by both CSV and PDF exports.
 const EXPORT_FIELDS = [
   { header: 'Full Name', key: 'full_name' },
+  { header: 'Email ID', key: 'email' },
   { header: 'Department', key: 'department' },
   { header: 'Current Role', key: 'current_role' },
-  { header: 'Email ID', key: 'email' },
-  { header: 'Skills', key: 'skills' },
-  { header: 'Certification', key: 'certification' },
-  { header: 'Education', key: 'education' },
+  // { header: 'Skills', key: 'skills' },
   { header: 'Years of Experience', key: 'years_of_experience' },
   { header: 'Location', key: 'location' },
 ]
@@ -75,42 +73,46 @@ function exportEmployeesCSV(employees) {
   )
 }
 
+
 function exportEmployeesPDF(employees) {
   const doc = new jsPDF({
     orientation: 'landscape',
     unit: 'mm',
-    format: 'a3',
+    format: 'a4',
   })
 
-  doc.setFontSize(16)
-  doc.text('Employee Report', 14, 15)
-
-  doc.setFontSize(9)
-  doc.text(`Total employees: ${employees.length}`, 14, 22)
-
   autoTable(doc, {
-    startY: 28,
     head: [EXPORT_FIELDS.map((field) => field.header)],
     body: employees.map((employee) =>
       EXPORT_FIELDS.map((field) =>
         getExportValue(employee, field.key)
       )
     ),
+    theme: 'plain',
     styles: {
       fontSize: 8,
       cellPadding: 2,
       overflow: 'linebreak',
+      lineColor: [220, 220, 220],
+      lineWidth: 0.1,
     },
     headStyles: {
-      fillColor: [22, 84, 145],
+      fontStyle: 'bold',
+      textColor: [0, 0, 0],
+      fillColor: [255, 255, 255],
     },
-    margin: { left: 10, right: 10 },
+    margin: {
+      top: 10,
+      right: 10,
+      bottom: 10,
+      left: 10,
+    },
     horizontalPageBreak: true,
-    horizontalPageBreakRepeat: 0,
   })
 
   doc.save('employees.pdf')
 }
+
 
 function validateEmail(value) {
   if (!value || !value.trim()) {
