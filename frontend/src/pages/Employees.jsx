@@ -1,3 +1,4 @@
+
 import { useState } from 'react'
 import {
   createEmployee,
@@ -55,6 +56,11 @@ export default function Employees() {
     full_name: '',
     email: '',
     department: '',
+    current_role: '',
+    years_of_experience: '',
+    location: '',
+    industry: '',
+    other_industry: '',
   })
 
   const [formErrors, setFormErrors] = useState({})
@@ -67,6 +73,11 @@ export default function Employees() {
       full_name: '',
       email: '',
       department: '',
+      current_role: '',
+      years_of_experience: '',
+      location: '',
+      industry: '',
+      other_industry: ''
     })
 
     setFormErrors({})
@@ -77,10 +88,15 @@ export default function Employees() {
     setEditingId(emp.id)
 
     setForm({
-      employee_id: emp.employee_id,
-      full_name: emp.full_name,
-      email: emp.email,
-      department: emp.department,
+      employee_id: emp.employee_id || '',
+      full_name: emp.full_name || '',
+      email: emp.email || '',
+      department: emp.department || '',
+      current_role: emp.current_role || '',
+      years_of_experience: emp.years_of_experience ?? '',
+      location: emp.location || '',
+      industry: emp.industry || '',
+      other_industry: emp.other_industry || '',
     })
 
     setFormErrors({})
@@ -114,40 +130,53 @@ export default function Employees() {
 
     const errors = {}
 
-    const eId = validateRequired(
+    const employeeIdError = validateRequired(
       form.employee_id,
       'Employee ID'
     )
 
-    if (eId) {
-      errors.employee_id = eId
+    if (employeeIdError) {
+      errors.employee_id = employeeIdError
     }
 
-    const name = validateRequired(
+    const nameError = validateRequired(
       form.full_name,
       'Full name'
     )
 
-    if (name) {
-      errors.full_name = name
+    if (nameError) {
+      errors.full_name = nameError
     }
 
-    const email = validateEmail(form.email)
+    const emailError = validateEmail(form.email)
 
-    if (email) {
-      errors.email = email
+    if (emailError) {
+      errors.email = emailError
     }
 
-    const dept = validateRequired(
+    const departmentError = validateRequired(
       form.department,
       'Department'
     )
 
-    if (dept) {
-      errors.department = dept
+    if (departmentError) {
+      errors.department = departmentError
     }
 
-    if (Object.keys(errors).length) {
+    const experience =
+      form.years_of_experience === ''
+        ? null
+        : Number(form.years_of_experience)
+
+    if (
+      experience !== null &&
+      (!Number.isFinite(experience) || experience < 0)
+    ) {
+      errors.years_of_experience =
+        'Experience must be a non-negative number.'
+    }
+
+    if (Object.keys(errors).length > 0) {
       setFormErrors(errors)
       return
     }
@@ -160,6 +189,15 @@ export default function Employees() {
       full_name: form.full_name.trim(),
       email: form.email.trim(),
       department: form.department.trim(),
+      current_role: form.current_role.trim() || null,
+      years_of_experience: experience,
+      location: form.location.trim() || null,
+      industry: form.industry || null,
+
+      other_industry:
+          form.industry === 'Others'
+            ? form.other_industry.trim()
+            : null,
     }
 
     const promise = editingId
@@ -167,28 +205,38 @@ export default function Employees() {
           full_name: payload.full_name,
           email: payload.email,
           department: payload.department,
+          current_role: payload.current_role,
+          years_of_experience: payload.years_of_experience,
+          location: payload.location,
+          industry: payload.industry,
+          other_industry: payload.other_industry,
         })
       : createEmployee(payload)
 
     promise
       .then(() => {
+        const wasEditing = editingId !== null
+
         closeForm()
         loadEmployees()
 
         showSuccess(
-          editingId
+          wasEditing
             ? 'Employee updated successfully.'
             : 'Employee added successfully.'
         )
       })
       .catch((err) => {
         const detail =
-          err.response?.data?.error?.detail
+          err.response?.data?.error?.detail ||
+          err.response?.data?.detail
 
         if (detail) {
           setFormErrors((prev) => ({
             ...prev,
-            _: detail,
+            _: typeof detail === 'string'
+              ? detail
+              : JSON.stringify(detail),
           }))
         }
       })
@@ -209,47 +257,39 @@ export default function Employees() {
     deleteEmployee(emp.id)
       .then(() => {
         loadEmployees()
-
-        showSuccess(
-          'Employee deleted successfully.'
-        )
+        showSuccess('Employee deleted successfully.')
       })
       .catch(() => {})
   }
 
-  const searchText = search
-    .trim()
-    .toLowerCase()
+  // Search across all employee fields, including the new fields.
+  const searchText = search.trim().toLowerCase()
+
+  const searchableFields = [
+    'employee_id',
+    'full_name',
+    'email',
+    'department',
+    'current_role',
+    'years_of_experience',
+    'location',
+    'industry',
+    'other_industry',
+  ]
 
   const filteredEmployees = list.filter((employee) => {
     if (!searchText) {
       return true
     }
 
-    const employeeId = String(
-      employee.employee_id || ''
-    ).toLowerCase()
-
-    const name = String(
-      employee.full_name || ''
-    ).toLowerCase()
-
-    const email = String(
-      employee.email || ''
-    ).toLowerCase()
-
-    const department = String(
-      employee.department || ''
-    ).toLowerCase()
-
-    return (
-      employeeId.includes(searchText) ||
-      name.includes(searchText) ||
-      email.includes(searchText) ||
-      department.includes(searchText)
+    return searchableFields.some((field) =>
+      String(employee[field] ?? '')
+        .toLowerCase()
+        .includes(searchText)
     )
   })
 
+  // Table sorting is handled by the reusable Table component.
   const tableColumns = [
     {
       key: 'employee_id',
@@ -268,37 +308,52 @@ export default function Employees() {
       label: 'Department',
     },
     {
+      key: 'current_role',
+      label: 'Current Role',
+    },
+    {
+      key: 'years_of_experience',
+      label: 'Years of Experience',
+    },
+    {
+      key: 'location',
+      label: 'Location',
+    },
+    {
+      key: 'industry',
+      label: 'Industry',
+    },
+    {
       key: 'actions',
       label: 'Actions',
-      headerClassName: 'text-end',
+      sortable: false,
+      headerClassName: ' fw-semibold',
+       headerStyle: { fontSize: '1rem', fontWeight: 600 },
       cellClassName: 'text-end',
-
       render: (row) => (
-        <>
-          <Button
-            size="sm"
-            variant="outline-primary"
-            className="me-1"
-            onClick={() => openEdit(row)}
-          >
-            Edit
-          </Button>
+  <div className="d-flex justify-content-end align-items-center gap-2">
+    <Button
+      size="sm"
+      variant="outline-primary"
+      onClick={() => openEdit(row)}
+    >
+      Edit
+    </Button>
 
-          <Button
-            size="sm"
-            variant="outline-danger"
-            onClick={() => handleDelete(row)}
-          >
-            Delete
-          </Button>
-        </>
-      ),
+    <Button
+      size="sm"
+      variant="outline-danger"
+      onClick={() => handleDelete(row)}
+    >
+      Delete
+    </Button>
+  </div>
+),
     },
   ]
 
   return (
     <div className="page-employees">
-
       <div className="page-header-row">
         <div>
           <h2 className="page-title mb-1">
@@ -320,28 +375,18 @@ export default function Employees() {
           label="Search employees"
           name="search"
           value={search}
-          onChange={(e) =>
-            setSearch(e.target.value)
-          }
-          placeholder="Search by employee ID, name, email or department"
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search by ID, name, email, department, role, experience or location"
         />
       </div>
 
       {showForm && (
         <Card
-          title={
-            editingId
-              ? 'Edit employee'
-              : 'New employee'
-          }
+          title={editingId ? 'Edit employee' : 'New employee'}
           className="mb-4"
         >
-          <form
-            onSubmit={handleSubmit}
-            noValidate
-          >
+          <form onSubmit={handleSubmit} noValidate>
             <div className="row g-3">
-
               <div className="col-md-6">
                 <Input
                   label="Employee ID"
@@ -392,26 +437,88 @@ export default function Employees() {
                 />
               </div>
 
+              <div className="col-md-6">
+                <Input
+                  label="Current Role"
+                  name="current_role"
+                  value={form.current_role}
+                  onChange={handleChange}
+                  placeholder="e.g. QA Engineer"
+                />
+              </div>
+
+              <div className="col-md-6">
+                <Input
+                  label="Years of Experience"
+                  name="years_of_experience"
+                  type="number"
+                  value={form.years_of_experience}
+                  onChange={handleChange}
+                  error={formErrors.years_of_experience}
+                  placeholder="e.g. 5"
+                />
+              </div>
+              <div className="col-md-6">
+  <label className="form-label">
+    Industry / Domain
+  </label>
+
+  <select
+    className="form-select"
+    name="industry"
+    value={form.industry}
+    onChange={handleChange}
+  >
+    <option value="">Select Industry</option>
+    <option value="Banking">Banking</option>
+    <option value="Healthcare">Healthcare</option>
+    <option value="Retail">Retail</option>
+    <option value="Telecom">Telecom</option>
+    <option value="Insurance">Insurance</option>
+    <option value="Manufacturing">Manufacturing</option>
+    <option value="Automotive">Automotive</option>
+    <option value="Education">Education</option>
+    <option value="Others">Others</option>
+  </select>
+</div>
+
+{form.industry === 'Others' && (
+  <div className="col-md-6">
+    <Input
+      label="Other Industry"
+      name="other_industry"
+      value={form.other_industry}
+      onChange={handleChange}
+      placeholder="Enter Industry"
+    />
+  </div>
+)}
+
+              
+
+              <div className="col-md-6">
+                <Input
+                  label="Location"
+                  name="location"
+                  value={form.location}
+                  onChange={handleChange}
+                  placeholder="e.g. Bengaluru"
+                />
+              </div>
             </div>
 
             {formErrors._ && (
-              <div
-                className="form-alert-error"
-                role="alert"
-              >
+              <div className="form-alert-error" role="alert">
                 {formErrors._}
               </div>
             )}
 
             <div className="d-flex gap-2 mt-3">
-
               <Button
                 type="submit"
                 loading={formLoading}
               >
-                {editingId
-                  ? 'Update'
-                  : 'Create'}
+                {editingId ? 'Update' : 'Create'}
               </Button>
 
               <Button
@@ -421,21 +528,16 @@ export default function Employees() {
               >
                 Cancel
               </Button>
-
             </div>
-
           </form>
         </Card>
       )}
 
       {loading && list.length === 0 ? (
-
         <Card>
           <LoadingSpinner label="Loading employees…" />
         </Card>
-
       ) : error && list.length === 0 ? (
-
         <Card>
           <EmptyState
             variant="error"
@@ -448,9 +550,7 @@ export default function Employees() {
             }
           />
         </Card>
-
       ) : list.length === 0 ? (
-
         <Card>
           <EmptyState
             icon="👥"
@@ -458,31 +558,26 @@ export default function Employees() {
             message="No employee records are available."
             action={
               <Button onClick={openCreate}>
-                           </Button>
+                Add employee
+              </Button>
             }
           />
         </Card>
-
       ) : filteredEmployees.length === 0 ? (
-
         <Card>
           <EmptyState
             icon="🔍"
             title="No matching employees"
-            message="Try searching with another employee ID, name, email or department."
+            message="Try searching by employee ID, name, email, department, role, experience or location."
           />
         </Card>
-
       ) : (
-
         <Table
           columns={tableColumns}
           data={filteredEmployees}
           emptyMessage="No employees found."
         />
-
       )}
-
     </div>
   )
 }
