@@ -1,5 +1,6 @@
 import { Outlet, NavLink } from 'react-router-dom'
 import Logo from '../components/Logo'
+import { useState } from 'react'
 
 const navItems = [
   { to: '/dashboard', label: 'Dashboard', icon: '📊' },
@@ -7,6 +8,8 @@ const navItems = [
 ]
 
 export default function MainLayout() {
+  const [isAccountOpen, setIsAccountOpen] = useState(false)
+
   return (
     <div className="app-layout">
 
@@ -63,6 +66,30 @@ export default function MainLayout() {
               Employee Profile Management
             </span>
 
+          </div>
+          <div className="account-menu">
+            <button
+              type="button"
+              className="account-button"
+              onClick={() => setIsAccountOpen((prev) => !prev)}
+            >
+              Admin ▼
+            </button>
+
+            {isAccountOpen && (
+              <div className="account-dropdown">
+                <button
+                  type="button"
+                  className="btn btn-signout"
+                  onClick={() => {
+                    setIsAccountOpen(false)
+                    window.location.href = '/login'
+                  }}
+                >
+                  Sign out
+                </button>
+              </div>
+            )}
           </div>
 
         </header>
