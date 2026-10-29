@@ -1,4 +1,11 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
+
+import { useMsal } from "@azure/msal-react";
+import {
+  loginRequest,
+  ssoConfigured,
+} from "../authConfig";
 
 import {
   Alert,
@@ -21,9 +28,9 @@ import {
   LockOutlined,
   Visibility,
   VisibilityOff,
+  BusinessOutlined,
 } from "@mui/icons-material";
 
-//import { colors } from "../theme";
 import Logo from "../components/Logo";
 import BuildingArt from "../components/BuildingArt";
 
@@ -42,44 +49,147 @@ const inputSx = {
 
 export default function LoginPage({ onLoggedIn }) {
 
+  const { instance } = useMsal();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
 
+  const AUTH_ERROR_KEY = "hrmsAuthError";
+
+const [error, setError] = useState(
+  () => sessionStorage.getItem(AUTH_ERROR_KEY) || ""
+);
+
+const showAuthError = (message) => {
+  sessionStorage.setItem(AUTH_ERROR_KEY, message);
+  setError(message);
+};
+
+const clearAuthError = () => {
+  sessionStorage.removeItem(AUTH_ERROR_KEY);
+  setError("");
+};
+
+  const [normalLoginLoading, setNormalLoginLoading] =
+    useState(false);
+
+  const [ssoLoading, setSsoLoading] =
+    useState(false);
+
+
+  // ==========================================================
+  // NEW AUTHENTICATION
+  // MICROSOFT ORGANIZATION SSO
+  // ==========================================================
+
+
+const handleOrganizationLogin = async () => {
+  clearAuthError();
+
+  if (!ssoConfigured) {
+    showAuthError(
+      "Organization SSO is not configured yet. Tenant ID and Client ID are required."
+    );
+    return;
+  }
+
+  try {
+    setSsoLoading(true);
+
+    await instance.loginRedirect(loginRequest);
+  } catch (err) {
+    console.error("Microsoft Organization Login Error:", err);
+
+    const errorCode = err?.errorCode;
+    const errorMessage = err?.message?.toLowerCase() || "";
+
+  if (
+      errorCode === "user_cancelled" ||
+      errorCode === "user_canceled" ||
+      errorMessage.includes("user_cancelled") ||
+      errorMessage.includes("user_canceled")
+    ) {
+      showAuthError(
+        "Akkodis Client ID & Tenant ID is yet to be configured"
+      );
+    } else {
+      showAuthError(
+        "Microsoft sign-in failed. Please try again."
+      );
+    }
+
+    setSsoLoading(false);
+  }
+};
+
+  setSsoLoading(false);
+}
+{error && (
+  <Alert
+    severity="error"
+    onClose={clearAuthError}
+    sx={{ mb: 2 }}
+  >
+    {error}
+  </Alert>
+)}
+};
+
+
+
+  // ==========================================================
+  // OLD AUTHENTICATION
+  // EMAIL + PASSWORD
+  //
+  // KEEPING THIS FOR LOCAL DEVELOPMENT
+  // ==========================================================
 
   const handleLogin = async (e) => {
 
     e.preventDefault();
 
-    setError("");
+clearAuthError();
 
     const cleanEmail = email.trim();
 
 
+    // Validate email
+
     if (!cleanEmail) {
-      setError("Enter your email address.");
+
+      setError(
+        "Enter your email address."
+      );
+
       return;
     }
 
 
     if (!/^\S+@\S+\.\S+$/.test(cleanEmail)) {
+
       setError(
         "Enter a valid email address, like name@company.com."
       );
+
       return;
     }
 
+
+    // Validate password
 
     if (!password) {
-      setError("Enter your password.");
+
+      setError(
+        "Enter your password."
+      );
+
       return;
     }
 
 
-    setLoading(true);
+    setNormalLoginLoading(true);
 
    
     
@@ -102,30 +212,49 @@ try {
       );
 
 
-      const data = await response.json();
+      let data = {};
+
+      try {
+
+        data = await response.json();
+
+      } catch {
+
+        data = {};
+      }
 
 
       if (!response.ok) {
 
         throw new Error(
-          data.detail || "Invalid email or password"
+          data.detail ||
+          "Invalid email or password."
         );
-
       }
 
 
       console.log(
-        "Login successful:",
+        "Local login successful:",
         data
       );
 
 
       const user = {
-        name: data.name,
-        role: data.role,
-        email: cleanEmail,
+
+        name:
+          data.name ||
+          cleanEmail,
+
+        role:
+          data.role ||
+          "Employee",
+
+        email:
+          cleanEmail,
       };
 
+
+      // Save token/user
 
       if (remember) {
 
@@ -139,6 +268,16 @@ try {
           JSON.stringify(user)
         );
 
+        // Remove old session values
+
+        sessionStorage.removeItem(
+          "hrmsToken"
+        );
+
+        sessionStorage.removeItem(
+          "hrmsUser"
+        );
+
       } else {
 
         sessionStorage.setItem(
@@ -151,6 +290,15 @@ try {
           JSON.stringify(user)
         );
 
+        // Remove old persistent values
+
+        localStorage.removeItem(
+          "hrmsToken"
+        );
+
+        localStorage.removeItem(
+          "hrmsUser"
+        );
       }
 
 
@@ -160,32 +308,38 @@ try {
 
       } else {
 
-        window.location.href = "/dashboard";
-
+        window.location.href =
+          "/dashboard";
       }
 
 
     } catch (err) {
 
       console.error(
-        "Login error:",
+        "Local Login Error:",
         err
       );
 
 
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Unable to login. Please try again."
-      );
+      if (err instanceof TypeError) {
 
+        setError(
+          "Unable to connect to the backend. Make sure FastAPI is running on port 8000."
+        );
+
+      } else {
+
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Unable to login. Please try again."
+        );
+      }
 
     } finally {
 
-      setLoading(false);
-
+      setNormalLoginLoading(false);
     }
-
   };
 
 
@@ -205,7 +359,9 @@ try {
     >
 
 
-      {/* LEFT SIDE */}
+      {/* ======================================================
+          LEFT SIDE
+         ====================================================== */}
 
       <Box
         sx={{
@@ -229,7 +385,6 @@ try {
         }}
       >
 
-
         <Logo width={260} />
 
 
@@ -239,7 +394,8 @@ try {
 
             fontSize: 18,
 
-            color: "text.secondary",
+            color:
+              "text.secondary",
           }}
         >
 
@@ -284,7 +440,8 @@ try {
 
             lineHeight: 1.5,
 
-            color: "text.secondary",
+            color:
+              "text.secondary",
           }}
         >
 
@@ -297,12 +454,13 @@ try {
 
         <BuildingArt />
 
-
       </Box>
 
 
 
-      {/* RIGHT SIDE */}
+      {/* ======================================================
+          RIGHT SIDE
+         ====================================================== */}
 
       <Box
         sx={{
@@ -319,9 +477,9 @@ try {
         }}
       >
 
-
         <Paper
           elevation={0}
+
           sx={{
             width: "100%",
 
@@ -336,28 +494,6 @@ try {
 
             boxShadow:
               "0 20px 60px rgba(30,70,140,0.10)",
-
-
-            "@media (max-height: 950px)": {
-
-              p: 3,
-
-            },
-
-
-            "@media (max-height: 650px)": {
-
-              p: 2.5,
-
-
-              "& .card-intro": {
-
-                display: "none",
-
-              },
-
-            },
-
           }}
         >
 
@@ -366,16 +502,18 @@ try {
 
           <Box
             sx={{
-              textAlign: "center",
+              textAlign:
+                "center",
             }}
           >
 
-
             <Box
               sx={{
-                display: "flex",
+                display:
+                  "flex",
 
-                justifyContent: "center",
+                justifyContent:
+                  "center",
               }}
             >
 
@@ -390,7 +528,8 @@ try {
 
                 fontSize: 15,
 
-                color: "text.secondary",
+                color:
+                  "text.secondary",
               }}
             >
 
@@ -398,9 +537,7 @@ try {
 
             </Typography>
 
-
           </Box>
-
 
 
           <Divider
@@ -410,21 +547,20 @@ try {
           />
 
 
-
-          {/* LOGIN HEADING */}
+          {/* LOGIN TITLE */}
 
           <Box
-            className="card-intro"
             sx={{
-              textAlign: "center",
+              textAlign:
+                "center",
 
               mb: 2,
             }}
           >
 
-
             <Typography
               component="h1"
+
               sx={{
                 fontSize: 22,
 
@@ -439,51 +575,169 @@ try {
 
             <Typography
               sx={{
-                color: "text.secondary",
+                mt: 0.5,
+
+                color:
+                  "text.secondary",
 
                 fontSize: 14,
               }}
             >
 
-              Enter your email and password to access Akkodis.
+              Access Akkodis Employee Profile Management
 
             </Typography>
-
 
           </Box>
 
 
 
-          {/* LOGIN FORM */}
+          {/* ==================================================
+              ERROR
+             ================================================== */}
+
+          {error && (
+
+            <Alert
+              severity="error"
+
+              sx={{
+                mb: 2,
+              }}
+            >
+
+              {error}
+
+            </Alert>
+
+          )}
+
+
+
+          {/* ==================================================
+              NEW MICROSOFT ORGANIZATION LOGIN
+             ================================================== */}
+
+          <Button
+            type="button"
+
+            variant="contained"
+
+            fullWidth
+
+            startIcon={
+              !ssoLoading
+                ? <BusinessOutlined />
+                : null
+            }
+
+            disabled={
+              ssoLoading ||
+              !ssoConfigured
+            }
+
+            onClick={
+              handleOrganizationLogin
+            }
+
+            sx={{
+              py: 1.3,
+
+              fontSize: 16,
+
+              borderRadius: 2,
+
+              textTransform: "none",
+
+              boxShadow: "none",
+
+              bgcolor: "#0067b8",
+
+              "&:hover": {
+                bgcolor: "#005a9e",
+              },
+
+              "&.Mui-disabled": {
+                bgcolor: "#94a3b8",
+                color: "#ffffff",
+              },
+            }}
+          >
+
+            {ssoLoading ? (
+
+              <CircularProgress
+                size={24}
+                color="inherit"
+              />
+
+            ) : (
+
+              "Sign in with Organization ID"
+
+            )}
+
+          </Button>
+
+
+
+          {!ssoConfigured && (
+
+            <Typography
+              sx={{
+                mt: 1,
+
+                textAlign: "center",
+
+                fontSize: 12,
+
+                color:
+                  "text.secondary",
+              }}
+            >
+
+              Organization SSO will be enabled after
+              Tenant ID and Client ID are configured.
+
+            </Typography>
+
+          )}
+
+
+
+          <Divider
+            sx={{
+              my: 2.5,
+
+              color:
+                "text.secondary",
+
+              fontSize: 13,
+            }}
+          >
+
+            OR
+
+          </Divider>
+
+
+
+          {/* ==================================================
+              OLD EMAIL/PASSWORD LOGIN
+             ================================================== */}
 
           <Box
             component="form"
 
-            onSubmit={handleLogin}
+            onSubmit={
+              handleLogin
+            }
 
             noValidate
           >
 
 
-            {error && (
-
-              <Alert
-                severity="error"
-
-                sx={{
-                  mb: 2,
-                }}
-              >
-
-                {error}
-
-              </Alert>
-
-            )}
-
-
-
-            {/* EMAIL */}
+            {/* EMAIL LABEL */}
 
             <Typography
               component="label"
@@ -502,6 +756,9 @@ try {
             </Typography>
 
 
+
+            {/* EMAIL INPUT */}
+
             <TextField
               id="email"
 
@@ -519,7 +776,9 @@ try {
 
               value={email}
 
-              disabled={loading}
+              disabled={
+                normalLoginLoading
+              }
 
               onChange={(e) => {
 
@@ -528,9 +787,7 @@ try {
                 );
 
                 if (error) {
-
                   setError("");
-
                 }
 
               }}
@@ -552,7 +809,8 @@ try {
 
                       <EmailOutlined
                         sx={{
-                          color: "#64748b",
+                          color:
+                            "#64748b",
                         }}
                       />
 
@@ -561,13 +819,12 @@ try {
                   ),
 
                 },
-
               }}
             />
 
 
 
-            {/* PASSWORD */}
+            {/* PASSWORD LABEL */}
 
             <Typography
               component="label"
@@ -586,6 +843,9 @@ try {
             </Typography>
 
 
+
+            {/* PASSWORD INPUT */}
+
             <TextField
               id="password"
 
@@ -601,11 +861,14 @@ try {
                   : "password"
               }
 
-              placeholder="Enter your password"
+              placeholder=
+                "Enter your password"
 
               value={password}
 
-              disabled={loading}
+              disabled={
+                normalLoginLoading
+              }
 
               onChange={(e) => {
 
@@ -614,9 +877,7 @@ try {
                 );
 
                 if (error) {
-
                   setError("");
-
                 }
 
               }}
@@ -636,7 +897,8 @@ try {
 
                       <LockOutlined
                         sx={{
-                          color: "#64748b",
+                          color:
+                            "#64748b",
                         }}
                       />
 
@@ -660,7 +922,8 @@ try {
 
                         onClick={() =>
                           setShowPassword(
-                            (current) => !current
+                            (current) =>
+                              !current
                           )
                         }
 
@@ -679,23 +942,23 @@ try {
                     </InputAdornment>
 
                   ),
-
                 },
-
               }}
             />
 
 
 
-            {/* REMEMBER ME */}
+            {/* REMEMBER + FORGOT PASSWORD */}
 
             <Box
               sx={{
                 display: "flex",
 
-                justifyContent: "space-between",
+                justifyContent:
+                  "space-between",
 
-                alignItems: "center",
+                alignItems:
+                  "center",
 
                 my: 1,
               }}
@@ -708,9 +971,13 @@ try {
                   <Checkbox
                     size="small"
 
-                    checked={remember}
+                    checked={
+                      remember
+                    }
 
-                    disabled={loading}
+                    disabled={
+                      normalLoginLoading
+                    }
 
                     onChange={(e) =>
                       setRemember(
@@ -737,7 +1004,6 @@ try {
               />
 
 
-
               <Link
                 component="button"
 
@@ -751,7 +1017,7 @@ try {
 
                 onClick={() =>
                   setError(
-                    "Password reset is not set up yet. Contact your HR administrator."
+                    "Password reset is not set up yet. Contact your administrator."
                   )
                 }
               >
@@ -760,12 +1026,11 @@ try {
 
               </Link>
 
-
             </Box>
 
 
 
-            {/* LOGIN BUTTON */}
+            {/* LOCAL LOGIN BUTTON */}
 
             <Button
               type="submit"
@@ -774,7 +1039,10 @@ try {
 
               fullWidth
 
-              disabled={loading}
+              disabled={
+                normalLoginLoading ||
+                ssoLoading
+              }
 
               sx={{
                 py: 1.3,
@@ -783,16 +1051,18 @@ try {
 
                 borderRadius: 2,
 
-                boxShadow: "none",
+                textTransform:
+                  "none",
+
+                boxShadow:
+                  "none",
               }}
             >
 
-
-              {loading ? (
+              {normalLoginLoading ? (
 
                 <CircularProgress
                   size={24}
-
                   color="inherit"
                 />
 
@@ -802,9 +1072,7 @@ try {
 
               )}
 
-
             </Button>
-
 
           </Box>
 
@@ -814,7 +1082,8 @@ try {
             sx={{
               mt: 3,
 
-              color: "text.secondary",
+              color:
+                "text.secondary",
 
               fontSize: 14,
             }}
@@ -827,12 +1096,8 @@ try {
 
         </Paper>
 
-
       </Box>
 
-
     </Box>
-
   );
-
 }
