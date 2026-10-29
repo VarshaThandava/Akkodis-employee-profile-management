@@ -160,6 +160,8 @@ export default function Employees() {
     current_role: '',
     years_of_experience: '',
     location: '',
+    industry: '',
+    other_industry: '',
   })
 
   const [formErrors, setFormErrors] = useState({})
@@ -175,6 +177,8 @@ export default function Employees() {
       current_role: '',
       years_of_experience: '',
       location: '',
+      industry: '',
+      other_industry: ''
     })
 
     setFormErrors({})
@@ -192,6 +196,8 @@ export default function Employees() {
       current_role: emp.current_role || '',
       years_of_experience: emp.years_of_experience ?? '',
       location: emp.location || '',
+      industry: emp.industry || '',
+      other_industry: emp.other_industry || '',
     })
 
     setFormErrors({})
@@ -287,6 +293,12 @@ export default function Employees() {
       current_role: form.current_role.trim() || null,
       years_of_experience: experience,
       location: form.location.trim() || null,
+      industry: form.industry || null,
+
+      other_industry:
+          form.industry === 'Others'
+            ? form.other_industry.trim()
+            : null,
     }
 
     const promise = editingId
@@ -297,6 +309,8 @@ export default function Employees() {
           current_role: payload.current_role,
           years_of_experience: payload.years_of_experience,
           location: payload.location,
+          industry: payload.industry,
+          other_industry: payload.other_industry,
         })
       : createEmployee(payload)
 
@@ -360,6 +374,8 @@ export default function Employees() {
     'current_role',
     'years_of_experience',
     'location',
+    'industry',
+    'other_industry',
   ]
 
   const filteredEmployees = list.filter((employee) => {
@@ -403,6 +419,10 @@ export default function Employees() {
     {
       key: 'location',
       label: 'Location',
+    },
+    {
+      key: 'industry',
+      label: 'Industry',
     },
     {
       key: 'actions',
@@ -579,6 +599,43 @@ export default function Employees() {
                   placeholder="e.g. 5"
                 />
               </div>
+              <div className="col-md-6">
+  <label className="form-label">
+    Industry / Domain
+  </label>
+
+  <select
+    className="form-select"
+    name="industry"
+    value={form.industry}
+    onChange={handleChange}
+  >
+    <option value="">Select Industry</option>
+    <option value="Banking">Banking</option>
+    <option value="Healthcare">Healthcare</option>
+    <option value="Retail">Retail</option>
+    <option value="Telecom">Telecom</option>
+    <option value="Insurance">Insurance</option>
+    <option value="Manufacturing">Manufacturing</option>
+    <option value="Automotive">Automotive</option>
+    <option value="Education">Education</option>
+    <option value="Others">Others</option>
+  </select>
+</div>
+
+{form.industry === 'Others' && (
+  <div className="col-md-6">
+    <Input
+      label="Other Industry"
+      name="other_industry"
+      value={form.other_industry}
+      onChange={handleChange}
+      placeholder="Enter Industry"
+    />
+  </div>
+)}
+
+              
 
               <div className="col-md-6">
                 <Input
