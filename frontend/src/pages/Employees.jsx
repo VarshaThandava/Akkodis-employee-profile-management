@@ -2,7 +2,6 @@
 import { useState } from 'react'
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
-
 import {
   createEmployee,
   updateEmployee,
@@ -17,18 +16,15 @@ import Table from '../components/Table'
 import LoadingSpinner from '../components/LoadingSpinner'
 import EmptyState from '../components/EmptyState'
 
-
+// Defines the employee fields and column headers used by both CSV and PDF exports.
 const EXPORT_FIELDS = [
   { header: 'Full Name', key: 'full_name' },
+  { header: 'Email ID', key: 'email' },
   { header: 'Department', key: 'department' },
   { header: 'Current Role', key: 'current_role' },
-  { header: 'Email ID', key: 'email' },
-  { header: 'Skills', key: 'skills' },
-  { header: 'Certification', key: 'certification' },
-  { header: 'Education', key: 'education' },
+  // { header: 'Skills', key: 'skills' },
   { header: 'Years of Experience', key: 'years_of_experience' },
   { header: 'Location', key: 'location' },
-  { header: 'Industry', key: 'industry' },
 ]
 
 function getExportValue(employee, key) {
@@ -67,10 +63,16 @@ function exportEmployeesCSV(employees) {
     ),
   ]
 
+  // UTF-8 BOM helps Excel display international characters correctly.
   const csv = '\uFEFF' + rows.map((row) => row.join(',')).join('\r\n')
 
-  downloadBlob(csv, 'text/csv;charset=utf-8;', 'employees.csv')
+  downloadBlob(
+    csv,
+    'text/csv;charset=utf-8;',
+    'employees.csv'
+  )
 }
+
 
 function exportEmployeesPDF(employees) {
   const doc = new jsPDF({
@@ -110,6 +112,7 @@ function exportEmployeesPDF(employees) {
 
   doc.save('employees.pdf')
 }
+
 
 function validateEmail(value) {
   if (!value || !value.trim()) {
@@ -154,6 +157,9 @@ export default function Employees() {
     full_name: '',
     email: '',
     department: '',
+    current_role: '',
+    years_of_experience: '',
+    location: '',
   })
 
   const [formErrors, setFormErrors] = useState({})
@@ -166,6 +172,9 @@ export default function Employees() {
       full_name: '',
       email: '',
       department: '',
+      current_role: '',
+      years_of_experience: '',
+      location: '',
     })
 
     setFormErrors({})
@@ -176,10 +185,13 @@ export default function Employees() {
     setEditingId(emp.id)
 
     setForm({
-      employee_id: emp.employee_id,
-      full_name: emp.full_name,
-      email: emp.email,
-      department: emp.department,
+      employee_id: emp.employee_id || '',
+      full_name: emp.full_name || '',
+      email: emp.email || '',
+      department: emp.department || '',
+      current_role: emp.current_role || '',
+      years_of_experience: emp.years_of_experience ?? '',
+      location: emp.location || '',
     })
 
     setFormErrors({})
@@ -272,14 +284,20 @@ export default function Employees() {
       full_name: form.full_name.trim(),
       email: form.email.trim(),
       department: form.department.trim(),
+      current_role: form.current_role.trim() || null,
+      years_of_experience: experience,
+      location: form.location.trim() || null,
     }
 
     const promise = editingId
       ? updateEmployee(editingId, {
-        full_name: payload.full_name,
-        email: payload.email,
-        department: payload.department,
-      })
+          full_name: payload.full_name,
+          email: payload.email,
+          department: payload.department,
+          current_role: payload.current_role,
+          years_of_experience: payload.years_of_experience,
+          location: payload.location,
+        })
       : createEmployee(payload)
 
     promise
@@ -328,12 +346,21 @@ export default function Employees() {
         loadEmployees()
         showSuccess('Employee deleted successfully.')
       })
-      .catch(() => {})
+      .catch(() => { })
   }
 
-  const searchText = search
-    .trim()
-    .toLowerCase()
+  // Search across all employee fields, including the new fields.
+  const searchText = search.trim().toLowerCase()
+
+  const searchableFields = [
+    'employee_id',
+    'full_name',
+    'email',
+    'department',
+    'current_role',
+    'years_of_experience',
+    'location',
+  ]
 
   const filteredEmployees = list.filter((employee) => {
     if (!searchText) {
@@ -364,6 +391,18 @@ export default function Employees() {
     {
       key: 'department',
       label: 'Department',
+    },
+    {
+      key: 'current_role',
+      label: 'Current Role',
+    },
+    {
+      key: 'years_of_experience',
+      label: 'Years of Experience',
+    },
+    {
+      key: 'location',
+      label: 'Location',
     },
     {
       key: 'actions',
@@ -407,48 +446,50 @@ export default function Employees() {
           </p>
         </div>
 
-        <Button onClick={openCreate}>
-          Add employee
-        </Button>
+        <div className="employee-header-actions">
+          <div className="employee-export">
+            <Button
+              type="button"
+              onClick={() => setExportOpen((open) => !open)}
+              disabled={loading || list.length === 0}
+            >
+              Export Employee Details<span aria-hidden="true">▾</span>
+            </Button>
+
+            {exportOpen && (
+              <div className="employee-export-menu">
+                <button
+                  type="button"
+                  className="employee-export-item"
+                  disabled={filteredEmployees.length === 0}
+                  onClick={() => {
+                    exportEmployeesCSV(filteredEmployees)
+                    setExportOpen(false)
+                  }}
+                >
+                  Export as CSV
+                </button>
+
+                <button
+                  type="button"
+                  className="employee-export-item"
+                  disabled={filteredEmployees.length === 0}
+                  onClick={() => {
+                    exportEmployeesPDF(filteredEmployees)
+                    setExportOpen(false)
+                  }}
+                >
+                  Export as PDF
+                </button>
+              </div>
+            )}
+          </div>
+
+          <Button onClick={openCreate}>Add employee</Button>
+        </div>
+
       </div>
 
-      <div className="employee-export">
-  <Button
-    type="button"
-    onClick={() => setExportOpen((open) => !open)}
-    disabled={loading || list.length === 0}
-  >
-    Export Employee Details <span aria-hidden="true">▾</span>
-  </Button>
-
-  {exportOpen && (
-    <div className="employee-export-menu">
-      <button
-        type="button"
-        className="employee-export-item"
-        disabled={filteredEmployees.length === 0}
-        onClick={() => {
-          exportEmployeesCSV(filteredEmployees)
-          setExportOpen(false)
-        }}
-      >
-        Export as CSV
-      </button>
-
-      <button
-        type="button"
-        className="employee-export-item"
-        disabled={filteredEmployees.length === 0}
-        onClick={() => {
-          exportEmployeesPDF(filteredEmployees)
-          setExportOpen(false)
-        }}
-      >
-        Export as PDF
-      </button>
-    </div>
-  )}
-</div>
 
       <div className="mt-4 mb-4">
         <Input
@@ -517,6 +558,37 @@ export default function Employees() {
                 />
               </div>
 
+              <div className="col-md-6">
+                <Input
+                  label="Current Role"
+                  name="current_role"
+                  value={form.current_role}
+                  onChange={handleChange}
+                  placeholder="e.g. QA Engineer"
+                />
+              </div>
+
+              <div className="col-md-6">
+                <Input
+                  label="Years of Experience"
+                  name="years_of_experience"
+                  type="number"
+                  value={form.years_of_experience}
+                  onChange={handleChange}
+                  error={formErrors.years_of_experience}
+                  placeholder="e.g. 5"
+                />
+              </div>
+
+              <div className="col-md-6">
+                <Input
+                  label="Location"
+                  name="location"
+                  value={form.location}
+                  onChange={handleChange}
+                  placeholder="e.g. Bengaluru"
+                />
+              </div>
             </div>
 
             {formErrors._ && (
@@ -569,9 +641,10 @@ export default function Employees() {
             title="No employees"
             message="No employee records are available."
             action={
-              <Button onClick={openCreate}>
-              </Button>
-            }
+  <Button onClick={openCreate}>
+    Add employee
+  </Button>
+}
           />
         </Card>
       ) : filteredEmployees.length === 0 ? (
