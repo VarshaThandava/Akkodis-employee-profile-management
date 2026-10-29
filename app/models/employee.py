@@ -1,7 +1,7 @@
 """Employee model."""
 from datetime import datetime
 
-from sqlalchemy import DateTime, Float, String, JSON, func
+from sqlalchemy import DateTime, Float, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -39,16 +39,10 @@ class Employee(Base):
         nullable=False
     )
 
-   # Employee profile fields
+    # Employee profile fields
     current_role: Mapped[str | None] = mapped_column(
         String(255),
         nullable=True
-    )
-
-    technical_skill: Mapped[list[str]] = mapped_column(
-        JSON,
-        nullable=False,
-        default=list,
     )
 
     years_of_experience: Mapped[float | None] = mapped_column(
@@ -85,7 +79,4 @@ class Employee(Base):
     )
 
     def __repr__(self) -> str:
-        return (
-            f"<Employee(id={self.id}, "
-            f"employee_id={self.employee_id!r})>"
-        )
+        return f"<Employee(id={self.id}, employee_id={self.employee_id!r})>"
