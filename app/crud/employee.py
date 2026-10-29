@@ -87,6 +87,10 @@ def create(
         email=payload.email,
         department=payload.department,
         current_role=payload.current_role,
+
+         # Changed by dileepkolekar: save technical skills.
+        technical_skill=payload.technical_skill,
+
         years_of_experience=payload.years_of_experience,
         location=payload.location,
 
