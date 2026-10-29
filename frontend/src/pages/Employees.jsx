@@ -1,5 +1,8 @@
 
 import { useState } from 'react'
+import { jsPDF } from 'jspdf'
+import autoTable from 'jspdf-autotable'
+
 import {
   createEmployee,
   updateEmployee,
@@ -25,6 +28,7 @@ const EXPORT_FIELDS = [
   { header: 'Education', key: 'education' },
   { header: 'Years of Experience', key: 'years_of_experience' },
   { header: 'Location', key: 'location' },
+  { header: 'Industry', key: 'industry' },
 ]
 
 function getExportValue(employee, key) {
@@ -63,48 +67,45 @@ function exportEmployeesCSV(employees) {
     ),
   ]
 
-  // UTF-8 BOM helps Excel display international characters correctly.
   const csv = '\uFEFF' + rows.map((row) => row.join(',')).join('\r\n')
 
-  downloadBlob(
-    csv,
-    'text/csv;charset=utf-8;',
-    'employees.csv'
-  )
+  downloadBlob(csv, 'text/csv;charset=utf-8;', 'employees.csv')
 }
 
 function exportEmployeesPDF(employees) {
   const doc = new jsPDF({
     orientation: 'landscape',
     unit: 'mm',
-    format: 'a3',
+    format: 'a4',
   })
 
-  doc.setFontSize(16)
-  doc.text('Employee Report', 14, 15)
-
-  doc.setFontSize(9)
-  doc.text(`Total employees: ${employees.length}`, 14, 22)
-
   autoTable(doc, {
-    startY: 28,
     head: [EXPORT_FIELDS.map((field) => field.header)],
     body: employees.map((employee) =>
       EXPORT_FIELDS.map((field) =>
         getExportValue(employee, field.key)
       )
     ),
+    theme: 'plain',
     styles: {
       fontSize: 8,
       cellPadding: 2,
       overflow: 'linebreak',
+      lineColor: [220, 220, 220],
+      lineWidth: 0.1,
     },
     headStyles: {
-      fillColor: [22, 84, 145],
+      fontStyle: 'bold',
+      textColor: [0, 0, 0],
+      fillColor: [255, 255, 255],
     },
-    margin: { left: 10, right: 10 },
+    margin: {
+      top: 10,
+      right: 10,
+      bottom: 10,
+      left: 10,
+    },
     horizontalPageBreak: true,
-    horizontalPageBreakRepeat: 0,
   })
 
   doc.save('employees.pdf')
@@ -146,6 +147,7 @@ export default function Employees() {
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [formLoading, setFormLoading] = useState(false)
+  const [exportOpen, setExportOpen] = useState(false)
 
   const [form, setForm] = useState({
     employee_id: '',
@@ -409,6 +411,44 @@ export default function Employees() {
           Add employee
         </Button>
       </div>
+
+      <div className="employee-export">
+  <Button
+    type="button"
+    onClick={() => setExportOpen((open) => !open)}
+    disabled={loading || list.length === 0}
+  >
+    Export Employee Details <span aria-hidden="true">▾</span>
+  </Button>
+
+  {exportOpen && (
+    <div className="employee-export-menu">
+      <button
+        type="button"
+        className="employee-export-item"
+        disabled={filteredEmployees.length === 0}
+        onClick={() => {
+          exportEmployeesCSV(filteredEmployees)
+          setExportOpen(false)
+        }}
+      >
+        Export as CSV
+      </button>
+
+      <button
+        type="button"
+        className="employee-export-item"
+        disabled={filteredEmployees.length === 0}
+        onClick={() => {
+          exportEmployeesPDF(filteredEmployees)
+          setExportOpen(false)
+        }}
+      >
+        Export as PDF
+      </button>
+    </div>
+  )}
+</div>
 
       <div className="mt-4 mb-4">
         <Input
