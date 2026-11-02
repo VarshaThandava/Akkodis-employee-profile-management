@@ -1,8 +1,19 @@
 
 """Employee schemas: request (create/update) and response (read)."""
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
+
+
+class PrimarySkill(BaseModel):
+    skill: str = Field(..., min_length=1, max_length=100)
+    proficiency: Literal[
+        "Beginner",
+        "Intermediate",
+        "Advanced",
+        "Expert"
+    ]
 
 
 class EmployeeCreate(BaseModel):
@@ -12,11 +23,13 @@ class EmployeeCreate(BaseModel):
     full_name: str = Field(..., min_length=1, max_length=255)
     email: EmailStr
     department: str = Field(..., min_length=1, max_length=128)
-    current_role: str | None = Field(None, max_length=255)
-    years_of_experience: float | None = Field(None, ge=0)
-    location: str | None = Field(None, max_length=255)
 
-    
+    # Mandatory fields
+    current_role: str = Field(..., min_length=1, max_length=255)
+    years_of_experience: float = Field(..., ge=0)
+    location: str = Field(..., min_length=1, max_length=255)
+
+    primary_skills: list[PrimarySkill] = Field(..., min_length=1)
 
 
 class EmployeeUpdate(BaseModel):
@@ -26,9 +39,12 @@ class EmployeeUpdate(BaseModel):
     email: EmailStr | None = None
     department: str | None = Field(None, min_length=1, max_length=128)
 
-    current_role: str | None = Field(None, max_length=255)
+    # Optional fields for partial updates
+    current_role: str | None = Field(None, min_length=1, max_length=255)
     years_of_experience: float | None = Field(None, ge=0)
-    location: str | None = Field(None, max_length=255)
+    location: str | None = Field(None, min_length=1, max_length=255)
+
+    primary_skills: list[PrimarySkill] = Field(..., min_length=1)
 
 
 class EmployeeRead(BaseModel):
@@ -45,3 +61,4 @@ class EmployeeRead(BaseModel):
     years_of_experience: float | None = None
     location: str | None = None
     created_at: datetime
+    primary_skills: list[PrimarySkill] = Field(default_factory=list)

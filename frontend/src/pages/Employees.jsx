@@ -1,12 +1,15 @@
 
 import { useState } from 'react'
+import { Autocomplete, TextField } from '@mui/material'
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
+
 import {
   createEmployee,
   updateEmployee,
   deleteEmployee,
 } from '../services/api'
+
 import { useToast } from '../contexts/ToastContext'
 import { useEmployees } from '../hooks/useEmployees'
 import Button from '../components/Button'
@@ -29,6 +32,35 @@ const EXPORT_FIELDS = [
   { header: 'Location', key: 'location' },
 ]
 
+const SKILL_OPTIONS = [
+  'Manual Testing',
+  'Functional Testing',
+  'Regression Testing',
+  'Smoke Testing',
+  'Sanity Testing',
+  'API Testing',
+  'Playwright',
+  'Selenium',
+  'Python',
+  'Java',
+  'JavaScript',
+  'SQL',
+  'Postman',
+  'JMeter',
+  'Git',
+  'Jira',
+  'Agile',
+  'CI/CD',
+]
+
+const PROFICIENCY_OPTIONS = [
+  'Beginner',
+  'Intermediate',
+  'Advanced',
+  'Expert',
+]
+
+
 function getExportValue(employee, key) {
   const value = employee[key]
 
@@ -38,6 +70,7 @@ function getExportValue(employee, key) {
 
   return String(value)
 }
+
 
 function downloadBlob(content, type, filename) {
   const blob = new Blob([content], { type })
@@ -52,6 +85,7 @@ function downloadBlob(content, type, filename) {
   URL.revokeObjectURL(url)
 }
 
+
 function exportEmployeesCSV(employees) {
   const escapeCSV = (value) =>
     `"${String(value).replace(/"/g, '""')}"`
@@ -65,7 +99,6 @@ function exportEmployeesCSV(employees) {
     ),
   ]
 
-  // UTF-8 BOM helps Excel display international characters correctly.
   const csv = '\uFEFF' + rows.map((row) => row.join(',')).join('\r\n')
 
   downloadBlob(
@@ -74,6 +107,7 @@ function exportEmployeesCSV(employees) {
     'employees.csv'
   )
 }
+
 
 function exportEmployeesPDF(employees) {
   const doc = new jsPDF({
@@ -112,6 +146,7 @@ function exportEmployeesPDF(employees) {
   doc.save('employees.pdf')
 }
 
+
 function validateEmail(value) {
   if (!value || !value.trim()) {
     return 'Email is required.'
@@ -126,6 +161,7 @@ function validateEmail(value) {
   return null
 }
 
+
 function validateRequired(value, fieldName) {
   if (!value || !String(value).trim()) {
     return `${fieldName} is required.`
@@ -133,6 +169,7 @@ function validateRequired(value, fieldName) {
 
   return null
 }
+
 
 export default function Employees() {
   const { showSuccess } = useToast()
@@ -150,6 +187,9 @@ export default function Employees() {
   const [formLoading, setFormLoading] = useState(false)
   const [exportOpen, setExportOpen] = useState(false)
 
+  const [customSkill, setCustomSkill] = useState('')
+  const [showCustomSkillInput, setShowCustomSkillInput] = useState(false)
+
   const [form, setForm] = useState({
     employee_id: '',
     full_name: '',
@@ -158,9 +198,11 @@ export default function Employees() {
     current_role: '',
     years_of_experience: '',
     location: '',
+    primary_skills: [],
   })
 
   const [formErrors, setFormErrors] = useState({})
+
 
   function openCreate() {
     setEditingId(null)
@@ -173,11 +215,15 @@ export default function Employees() {
       current_role: '',
       years_of_experience: '',
       location: '',
+      primary_skills: [],
     })
 
+    setCustomSkill('')
+    setShowCustomSkillInput(false)
     setFormErrors({})
     setShowForm(true)
   }
+
 
   function openEdit(emp) {
     setEditingId(emp.id)
@@ -190,17 +236,26 @@ export default function Employees() {
       current_role: emp.current_role || '',
       years_of_experience: emp.years_of_experience ?? '',
       location: emp.location || '',
+      primary_skills: Array.isArray(emp.primary_skills)
+        ? emp.primary_skills
+        : [],
     })
 
+    setCustomSkill('')
+    setShowCustomSkillInput(false)
     setFormErrors({})
     setShowForm(true)
   }
 
+
   function closeForm() {
     setShowForm(false)
     setEditingId(null)
+    setCustomSkill('')
+    setShowCustomSkillInput(false)
     setFormErrors({})
   }
+
 
   function handleChange(e) {
     const { name, value } = e.target
@@ -218,117 +273,212 @@ export default function Employees() {
     }
   }
 
-  function handleSubmit(e) {
-    e.preventDefault()
 
-    const errors = {}
+  function handleSkillsChange(event, selectedSkills) {
+    const showOther = selectedSkills.includes('Other')
 
-    const employeeIdError = validateRequired(
-      form.employee_id,
-      'Employee ID'
+    setShowCustomSkillInput(showOther)
+
+    const skills = selectedSkills.filter(
+      (skill) => skill !== 'Other'
     )
 
-    if (employeeIdError) {
-      errors.employee_id = employeeIdError
-    }
-
-    const nameError = validateRequired(
-      form.full_name,
-      'Full name'
-    )
-
-    if (nameError) {
-      errors.full_name = nameError
-    }
-
-    const emailError = validateEmail(form.email)
-
-    if (emailError) {
-      errors.email = emailError
-    }
-
-    const departmentError = validateRequired(
-      form.department,
-      'Department'
-    )
-
-    if (departmentError) {
-      errors.department = departmentError
-    }
-
-    const experience =
-      form.years_of_experience === ''
-        ? null
-        : Number(form.years_of_experience)
-
-    if (
-      experience !== null &&
-      (!Number.isFinite(experience) || experience < 0)
-    ) {
-      errors.years_of_experience =
-        'Experience must be a non-negative number.'
-    }
-
-    if (Object.keys(errors).length > 0) {
-      setFormErrors(errors)
-      return
-    }
-
-    setFormErrors({})
-    setFormLoading(true)
-
-    const payload = {
-      employee_id: form.employee_id.trim(),
-      full_name: form.full_name.trim(),
-      email: form.email.trim(),
-      department: form.department.trim(),
-      current_role: form.current_role.trim() || null,
-      years_of_experience: experience,
-      location: form.location.trim() || null,
-    }
-
-    const promise = editingId
-      ? updateEmployee(editingId, {
-          full_name: payload.full_name,
-          email: payload.email,
-          department: payload.department,
-          current_role: payload.current_role,
-          years_of_experience: payload.years_of_experience,
-          location: payload.location,
-        })
-      : createEmployee(payload)
-
-    promise
-      .then(() => {
-        const wasEditing = editingId !== null
-
-        closeForm()
-        loadEmployees()
-
-        showSuccess(
-          wasEditing
-            ? 'Employee updated successfully.'
-            : 'Employee added successfully.'
+    setForm((prev) => ({
+      ...prev,
+      primary_skills: skills.map((skill) => {
+        const existing = prev.primary_skills.find(
+          (item) => item.skill === skill
         )
-      })
-      .catch((err) => {
-        const detail =
-          err.response?.data?.error?.detail ||
-          err.response?.data?.detail
 
-        if (detail) {
-          setFormErrors((prev) => ({
-            ...prev,
-            _: typeof detail === 'string'
-              ? detail
-              : JSON.stringify(detail),
-          }))
+        return existing || {
+          skill,
+          proficiency: 'Beginner',
         }
-      })
-      .finally(() => {
-        setFormLoading(false)
-      })
+      }),
+    }))
   }
+
+
+  function addCustomSkill() {
+    const skill = customSkill.trim()
+
+    if (!skill) return
+
+    const alreadyExists = form.primary_skills.some(
+      (item) => item.skill.toLowerCase() === skill.toLowerCase()
+    )
+
+    if (!alreadyExists) {
+      setForm((prev) => ({
+        ...prev,
+        primary_skills: [
+          ...prev.primary_skills,
+          {
+            skill,
+            proficiency: 'Beginner',
+          },
+        ],
+      }))
+    }
+
+    setCustomSkill('')
+    setShowCustomSkillInput(false)
+  }
+
+
+  function handleProficiencyChange(skillName, proficiency) {
+    setForm((prev) => ({
+      ...prev,
+      primary_skills: prev.primary_skills.map((item) =>
+        item.skill === skillName
+          ? { ...item, proficiency }
+          : item
+      ),
+    }))
+  }
+
+
+  
+function handleSubmit(e) {
+  e.preventDefault()
+
+  const errors = {}
+
+  const employeeIdError = validateRequired(
+    form.employee_id,
+    'Employee ID'
+  )
+
+  if (employeeIdError) {
+    errors.employee_id = employeeIdError
+  }
+
+  const nameError = validateRequired(
+    form.full_name,
+    'Full name'
+  )
+
+  if (nameError) {
+    errors.full_name = nameError
+  }
+
+  const emailError = validateEmail(form.email)
+
+  if (emailError) {
+    errors.email = emailError
+  }
+
+  const departmentError = validateRequired(
+    form.department,
+    'Department'
+  )
+
+  if (departmentError) {
+    errors.department = departmentError
+  }
+
+  // Current Role is mandatory
+  const currentRoleError = validateRequired(
+    form.current_role,
+    'Current Role'
+  )
+
+  if (currentRoleError) {
+    errors.current_role = currentRoleError
+  }
+
+  // Years of Experience is mandatory
+  const experience =
+    form.years_of_experience === ''
+      ? null
+      : Number(form.years_of_experience)
+
+  if (experience === null) {
+    errors.years_of_experience =
+      'Years of Experience is required.'
+  } else if (!Number.isFinite(experience) || experience < 0) {
+    errors.years_of_experience =
+      'Experience must be a non-negative number.'
+  }
+
+  // Location is mandatory
+  const locationError = validateRequired(
+    form.location,
+    'Location'
+  )
+
+  if (locationError) {
+    errors.location = locationError
+  }
+
+  if (form.primary_skills.length === 0) {
+  errors.primary_skills = 'Please select at least one Primary Skill.'
+}
+
+  if (Object.keys(errors).length > 0) {
+    setFormErrors(errors)
+    return
+  }
+
+  setFormErrors({})
+  setFormLoading(true)
+
+  const payload = {
+    employee_id: form.employee_id.trim(),
+    full_name: form.full_name.trim(),
+    email: form.email.trim(),
+    department: form.department.trim(),
+    current_role: form.current_role.trim(),
+    years_of_experience: experience,
+    location: form.location.trim(),
+    primary_skills: form.primary_skills,
+  }
+
+  const promise = editingId
+    ? updateEmployee(editingId, {
+        full_name: payload.full_name,
+        email: payload.email,
+        department: payload.department,
+        current_role: payload.current_role,
+        years_of_experience: payload.years_of_experience,
+        location: payload.location,
+        primary_skills: payload.primary_skills,
+      })
+    : createEmployee(payload)
+
+  promise
+    .then(() => {
+      const wasEditing = editingId !== null
+
+      closeForm()
+      loadEmployees()
+
+      showSuccess(
+        wasEditing
+          ? 'Employee updated successfully.'
+          : 'Employee added successfully.'
+      )
+    })
+    .catch((err) => {
+      const detail =
+        err.response?.data?.error?.detail ||
+        err.response?.data?.detail
+
+      if (detail) {
+        setFormErrors((prev) => ({
+          ...prev,
+          _: typeof detail === 'string'
+            ? detail
+            : JSON.stringify(detail),
+        }))
+      }
+    })
+    .finally(() => {
+      setFormLoading(false)
+    })
+}
+
+
 
   function handleDelete(emp) {
     if (
@@ -344,10 +494,10 @@ export default function Employees() {
         loadEmployees()
         showSuccess('Employee deleted successfully.')
       })
-      .catch(() => { })
+      .catch(() => {})
   }
 
-  // Search across all employee fields, including the new fields.
+
   const searchText = search.trim().toLowerCase()
 
   const searchableFields = [
@@ -372,7 +522,7 @@ export default function Employees() {
     )
   })
 
-  // Table sorting is handled by the reusable Table component.
+
   const tableColumns = [
     {
       key: 'employee_id',
@@ -407,29 +557,30 @@ export default function Employees() {
       label: 'Actions',
       sortable: false,
       headerClassName: ' fw-semibold',
-       headerStyle: { fontSize: '1rem', fontWeight: 600 },
+      headerStyle: { fontSize: '1rem', fontWeight: 600 },
       cellClassName: 'text-end',
       render: (row) => (
-  <div className="d-flex justify-content-end align-items-center gap-2">
-    <Button
-      size="sm"
-      variant="outline-primary"
-      onClick={() => openEdit(row)}
-    >
-      Edit
-    </Button>
+        <div className="d-flex justify-content-end align-items-center gap-2">
+          <Button
+            size="sm"
+            variant="outline-primary"
+            onClick={() => openEdit(row)}
+          >
+            Edit
+          </Button>
 
-    <Button
-      size="sm"
-      variant="outline-danger"
-      onClick={() => handleDelete(row)}
-    >
-      Delete
-    </Button>
-  </div>
-),
+          <Button
+            size="sm"
+            variant="outline-danger"
+            onClick={() => handleDelete(row)}
+          >
+            Delete
+          </Button>
+        </div>
+      ),
     },
   ]
+
 
   return (
     <div className="page-employees">
@@ -483,9 +634,10 @@ export default function Employees() {
             )}
           </div>
 
-          <Button onClick={openCreate}>Add employee</Button>
+          <Button onClick={openCreate}>
+            Add employee
+          </Button>
         </div>
-
       </div>
 
 
@@ -499,6 +651,7 @@ export default function Employees() {
         />
       </div>
 
+
       {showForm && (
         <Card
           title={editingId ? 'Edit employee' : 'New employee'}
@@ -506,6 +659,7 @@ export default function Employees() {
         >
           <form onSubmit={handleSubmit} noValidate>
             <div className="row g-3">
+
               <div className="col-md-6">
                 <Input
                   label="Employee ID"
@@ -562,6 +716,8 @@ export default function Employees() {
                   name="current_role"
                   value={form.current_role}
                   onChange={handleChange}
+                  error={formErrors.current_role}
+                  required
                   placeholder="e.g. QA Engineer"
                 />
               </div>
@@ -574,6 +730,7 @@ export default function Employees() {
                   value={form.years_of_experience}
                   onChange={handleChange}
                   error={formErrors.years_of_experience}
+                  required
                   placeholder="e.g. 5"
                 />
               </div>
@@ -584,16 +741,132 @@ export default function Employees() {
                   name="location"
                   value={form.location}
                   onChange={handleChange}
+                  error={formErrors.location}
+                  required
                   placeholder="e.g. Bengaluru"
                 />
               </div>
+
             </div>
+
+
+            {/* Skills & Qualifications */}
+
+            <div className="mt-4">
+              <h5 className="mb-3">
+                Skills & Qualifications
+              </h5>
+
+              <div className="mb-3">
+                <label>
+                  Primary Skills <span style={{ color: 'red' }}>*</span>
+                </label>
+
+                <Autocomplete
+                  multiple
+                  options={[...SKILL_OPTIONS, 'Other']}
+                  value={form.primary_skills.map(
+                    (item) => item.skill
+                  )}
+                  
+                  onChange={handleSkillsChange}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      placeholder="Select primary skills"
+                      size="small"
+                    />
+                  )}
+                />
+              </div>
+              {formErrors.primary_skills && (
+              <div className="text-danger small mt-1">
+                {formErrors.primary_skills}
+            </div>
+                  )}
+
+
+              {showCustomSkillInput && (
+                <div className="mb-3">
+                  <label className="form-label fw-semibold">
+                    Add Other Skill
+                  </label>
+
+                  <div className="d-flex gap-2">
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="Enter a custom skill"
+                      value={customSkill}
+                      onChange={(e) => setCustomSkill(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault()
+                          addCustomSkill()
+                        }
+                      }}
+                    />
+
+                    <button
+                      type="button"
+                      className="btn btn-outline-primary"
+                      onClick={addCustomSkill}
+                    >
+                      Add
+                    </button>
+                  </div>
+                </div>
+              )}
+
+
+              {form.primary_skills.length > 0 && (
+                <div className="mt-3">
+                  <label className="form-label fw-semibold">
+                    Primary Skills Proficiency
+                  </label>
+
+                  {form.primary_skills.map((item) => (
+                    <div
+                      key={item.skill}
+                      className="row align-items-center mb-2"
+                    >
+                      <div className="col-md-6">
+                        <span className="fw-medium">
+                          {item.skill}
+                        </span>
+                      </div>
+
+                      <div className="col-md-6">
+                        <select
+                          className="form-select"
+                          value={item.proficiency}
+                          onChange={(e) =>
+                            handleProficiencyChange(
+                              item.skill,
+                              e.target.value
+                            )
+                          }
+                        >
+                          {PROFICIENCY_OPTIONS.map((level) => (
+                            <option key={level} value={level}>
+                              {level}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
 
             {formErrors._ && (
               <div className="form-alert-error" role="alert">
                 {formErrors._}
               </div>
             )}
+
 
             <div className="d-flex gap-2 mt-3">
               <Button
@@ -611,9 +884,11 @@ export default function Employees() {
                 Cancel
               </Button>
             </div>
+
           </form>
         </Card>
       )}
+
 
       {loading && list.length === 0 ? (
         <Card>
@@ -639,10 +914,10 @@ export default function Employees() {
             title="No employees"
             message="No employee records are available."
             action={
-  <Button onClick={openCreate}>
-    Add employee
-  </Button>
-}
+              <Button onClick={openCreate}>
+                Add employee
+              </Button>
+            }
           />
         </Card>
       ) : filteredEmployees.length === 0 ? (

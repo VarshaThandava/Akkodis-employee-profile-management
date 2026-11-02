@@ -2,7 +2,7 @@
 """Employee model."""
 from datetime import datetime
 
-from sqlalchemy import DateTime, Float, String, func
+from sqlalchemy import DateTime, Float, String, JSON, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -30,6 +30,9 @@ class Employee(Base):
     )
     location: Mapped[str | None] = mapped_column(
         String(255), nullable=True
+    )
+    primary_skills: Mapped[list[dict] | None] = mapped_column(
+    JSON, nullable=True, default=list
     )
 
     created_at: Mapped[datetime] = mapped_column(

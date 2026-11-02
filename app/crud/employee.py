@@ -54,6 +54,10 @@ def create(db: Session, payload: EmployeeCreate) -> Employee:
         current_role=payload.current_role,
         years_of_experience=payload.years_of_experience,
         location=payload.location,
+        primary_skills=[
+        skill.model_dump()
+        for skill in payload.primary_skills
+        ],
     
     )
     db.add(obj)
@@ -67,6 +71,13 @@ def update(db: Session, employee_id: int, payload: EmployeeUpdate) -> Employee:
     if not obj:
         raise NotFoundError("Employee", employee_id)
     data = payload.model_dump(exclude_unset=True)
+
+    if "primary_skills" in data and data["primary_skills"] is not None:
+
+        data["primary_skills"] = [
+        skill.model_dump() 
+        for skill in data["primary_skills"]
+        ]
     for key, value in data.items():
         setattr(obj, key, value)
     db.commit()
