@@ -53,6 +53,19 @@ const SKILL_OPTIONS = [
   'CI/CD',
 ]
 
+const PLATFORM_TOOL_OPTIONS = [
+  'Jenkins',
+  'Docker',
+  'GitHub',
+  'GitLab',
+  'Azure DevOps',
+  'Kubernetes',
+  'AWS',
+  'Azure',
+  'Postman',
+  'Jira',
+]
+
 const PROFICIENCY_OPTIONS = [
   'Beginner',
   'Intermediate',
@@ -190,6 +203,10 @@ export default function Employees() {
   const [customSkill, setCustomSkill] = useState('')
   const [showCustomSkillInput, setShowCustomSkillInput] = useState(false)
 
+  const [customPlatformTool, setCustomPlatformTool] = useState('')
+  const [showCustomPlatformToolInput, setShowCustomPlatformToolInput] =
+    useState(false)
+
   const [form, setForm] = useState({
     employee_id: '',
     full_name: '',
@@ -199,6 +216,8 @@ export default function Employees() {
     years_of_experience: '',
     location: '',
     primary_skills: [],
+    platform_tools: [],
+    platform_tools_proficiency: [],
   })
 
   const [formErrors, setFormErrors] = useState({})
@@ -216,16 +235,28 @@ export default function Employees() {
       years_of_experience: '',
       location: '',
       primary_skills: [],
+      platform_tools: [],
+      platform_tools_proficiency: [],
     })
 
     setCustomSkill('')
     setShowCustomSkillInput(false)
+    setCustomPlatformTool('')
+    setShowCustomPlatformToolInput(false)
     setFormErrors({})
     setShowForm(true)
   }
 
 
   function openEdit(emp) {
+    const tools = Array.isArray(emp.platform_tools)
+      ? emp.platform_tools
+      : []
+
+    const proficiencies = Array.isArray(emp.platform_tools_proficiency)
+      ? emp.platform_tools_proficiency
+      : []
+
     setEditingId(emp.id)
 
     setForm({
@@ -239,10 +270,16 @@ export default function Employees() {
       primary_skills: Array.isArray(emp.primary_skills)
         ? emp.primary_skills
         : [],
+      platform_tools: tools,
+      platform_tools_proficiency: tools.map(
+        (_, index) => proficiencies[index] || 'Beginner'
+      ),
     })
 
     setCustomSkill('')
     setShowCustomSkillInput(false)
+    setCustomPlatformTool('')
+    setShowCustomPlatformToolInput(false)
     setFormErrors({})
     setShowForm(true)
   }
@@ -253,6 +290,8 @@ export default function Employees() {
     setEditingId(null)
     setCustomSkill('')
     setShowCustomSkillInput(false)
+    setCustomPlatformTool('')
+    setShowCustomPlatformToolInput(false)
     setFormErrors({})
   }
 
@@ -338,146 +377,237 @@ export default function Employees() {
   }
 
 
-  
-function handleSubmit(e) {
-  e.preventDefault()
+  // Platform Tools selection with individual proficiency mapping
+  function handlePlatformToolsChange(event, selectedTools) {
+    const showOther = selectedTools.includes('Other')
 
-  const errors = {}
+    setShowCustomPlatformToolInput(showOther)
 
-  const employeeIdError = validateRequired(
-    form.employee_id,
-    'Employee ID'
-  )
+    const tools = selectedTools.filter(
+      (tool) => tool !== 'Other'
+    )
 
-  if (employeeIdError) {
-    errors.employee_id = employeeIdError
-  }
-
-  const nameError = validateRequired(
-    form.full_name,
-    'Full name'
-  )
-
-  if (nameError) {
-    errors.full_name = nameError
-  }
-
-  const emailError = validateEmail(form.email)
-
-  if (emailError) {
-    errors.email = emailError
-  }
-
-  const departmentError = validateRequired(
-    form.department,
-    'Department'
-  )
-
-  if (departmentError) {
-    errors.department = departmentError
-  }
-
-  // Current Role is mandatory
-  const currentRoleError = validateRequired(
-    form.current_role,
-    'Current Role'
-  )
-
-  if (currentRoleError) {
-    errors.current_role = currentRoleError
-  }
-
-  // Years of Experience is mandatory
-  const experience =
-    form.years_of_experience === ''
-      ? null
-      : Number(form.years_of_experience)
-
-  if (experience === null) {
-    errors.years_of_experience =
-      'Years of Experience is required.'
-  } else if (!Number.isFinite(experience) || experience < 0) {
-    errors.years_of_experience =
-      'Experience must be a non-negative number.'
-  }
-
-  // Location is mandatory
-  const locationError = validateRequired(
-    form.location,
-    'Location'
-  )
-
-  if (locationError) {
-    errors.location = locationError
-  }
-
-  if (form.primary_skills.length === 0) {
-  errors.primary_skills = 'Please select at least one Primary Skill.'
-}
-
-  if (Object.keys(errors).length > 0) {
-    setFormErrors(errors)
-    return
-  }
-
-  setFormErrors({})
-  setFormLoading(true)
-
-  const payload = {
-    employee_id: form.employee_id.trim(),
-    full_name: form.full_name.trim(),
-    email: form.email.trim(),
-    department: form.department.trim(),
-    current_role: form.current_role.trim(),
-    years_of_experience: experience,
-    location: form.location.trim(),
-    primary_skills: form.primary_skills,
-  }
-
-  const promise = editingId
-    ? updateEmployee(editingId, {
-        full_name: payload.full_name,
-        email: payload.email,
-        department: payload.department,
-        current_role: payload.current_role,
-        years_of_experience: payload.years_of_experience,
-        location: payload.location,
-        primary_skills: payload.primary_skills,
-      })
-    : createEmployee(payload)
-
-  promise
-    .then(() => {
-      const wasEditing = editingId !== null
-
-      closeForm()
-      loadEmployees()
-
-      showSuccess(
-        wasEditing
-          ? 'Employee updated successfully.'
-          : 'Employee added successfully.'
+    setForm((prev) => {
+      const previousProficiency = new Map(
+        prev.platform_tools.map((tool, index) => [
+          tool,
+          prev.platform_tools_proficiency[index] || 'Beginner',
+        ])
       )
-    })
-    .catch((err) => {
-      const detail =
-        err.response?.data?.error?.detail ||
-        err.response?.data?.detail
 
-      if (detail) {
-        setFormErrors((prev) => ({
-          ...prev,
-          _: typeof detail === 'string'
-            ? detail
-            : JSON.stringify(detail),
-        }))
+      return {
+        ...prev,
+        platform_tools: tools,
+        platform_tools_proficiency: tools.map(
+          (tool) => previousProficiency.get(tool) || 'Beginner'
+        ),
       }
     })
-    .finally(() => {
-      setFormLoading(false)
-    })
-}
 
+    if (tools.length > 0) {
+      setFormErrors((prev) => ({
+        ...prev,
+        platform_tools: null,
+      }))
+    }
+  }
+
+
+  // Update proficiency for a specific platform tool
+  function handlePlatformToolProficiencyChange(toolName, proficiency) {
+    setForm((prev) => {
+      const toolIndex = prev.platform_tools.indexOf(toolName)
+
+      if (toolIndex === -1) return prev
+
+      const updatedProficiency = [...prev.platform_tools_proficiency]
+      updatedProficiency[toolIndex] = proficiency
+
+      return {
+        ...prev,
+        platform_tools_proficiency: updatedProficiency,
+      }
+    })
+  }
+
+
+  // Add a custom platform tool
+  function addCustomPlatformTool() {
+    const tool = customPlatformTool.trim()
+
+    if (!tool) return
+
+    const alreadyExists = form.platform_tools.some(
+      (item) => item.toLowerCase() === tool.toLowerCase()
+    )
+
+    if (!alreadyExists) {
+      setForm((prev) => ({
+        ...prev,
+        platform_tools: [...prev.platform_tools, tool],
+        platform_tools_proficiency: [
+          ...prev.platform_tools_proficiency,
+          'Beginner',
+        ],
+      }))
+    }
+
+    setCustomPlatformTool('')
+    setShowCustomPlatformToolInput(false)
+
+    setFormErrors((prev) => ({
+      ...prev,
+      platform_tools: null,
+    }))
+  }
+
+
+  function handleSubmit(e) {
+    e.preventDefault()
+
+    const errors = {}
+
+    const employeeIdError = validateRequired(
+      form.employee_id,
+      'Employee ID'
+    )
+
+    if (employeeIdError) {
+      errors.employee_id = employeeIdError
+    }
+
+    const nameError = validateRequired(
+      form.full_name,
+      'Full name'
+    )
+
+    if (nameError) {
+      errors.full_name = nameError
+    }
+
+    const emailError = validateEmail(form.email)
+
+    if (emailError) {
+      errors.email = emailError
+    }
+
+    const departmentError = validateRequired(
+      form.department,
+      'Department'
+    )
+
+    if (departmentError) {
+      errors.department = departmentError
+    }
+
+    const currentRoleError = validateRequired(
+      form.current_role,
+      'Current Role'
+    )
+
+    if (currentRoleError) {
+      errors.current_role = currentRoleError
+    }
+
+    const experience =
+      form.years_of_experience === ''
+        ? null
+        : Number(form.years_of_experience)
+
+    if (experience === null) {
+      errors.years_of_experience =
+        'Years of Experience is required.'
+    } else if (!Number.isFinite(experience) || experience < 0) {
+      errors.years_of_experience =
+        'Experience must be a non-negative number.'
+    }
+
+    const locationError = validateRequired(
+      form.location,
+      'Location'
+    )
+
+    if (locationError) {
+      errors.location = locationError
+    }
+
+    if (form.primary_skills.length === 0) {
+      errors.primary_skills =
+        'Please select at least one Primary Skill.'
+    }
+
+    if (form.platform_tools.length === 0) {
+      errors.platform_tools =
+        'Please select at least one Platform Tool.'
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors)
+      return
+    }
+
+    setFormErrors({})
+    setFormLoading(true)
+
+    const payload = {
+      employee_id: form.employee_id.trim(),
+      full_name: form.full_name.trim(),
+      email: form.email.trim(),
+      department: form.department.trim(),
+      current_role: form.current_role.trim(),
+      years_of_experience: experience,
+      location: form.location.trim(),
+      primary_skills: form.primary_skills,
+      platform_tools: form.platform_tools,
+      platform_tools_proficiency: form.platform_tools_proficiency,
+    }
+
+    const promise = editingId
+      ? updateEmployee(editingId, {
+          full_name: payload.full_name,
+          email: payload.email,
+          department: payload.department,
+          current_role: payload.current_role,
+          years_of_experience: payload.years_of_experience,
+          location: payload.location,
+          primary_skills: payload.primary_skills,
+          platform_tools: payload.platform_tools,
+          platform_tools_proficiency:
+            payload.platform_tools_proficiency,
+        })
+      : createEmployee(payload)
+
+    promise
+      .then(() => {
+        const wasEditing = editingId !== null
+
+        closeForm()
+        loadEmployees()
+
+        showSuccess(
+          wasEditing
+            ? 'Employee updated successfully.'
+            : 'Employee added successfully.'
+        )
+      })
+      .catch((err) => {
+        const detail =
+          err.response?.data?.error?.detail ||
+          err.response?.data?.detail
+
+        if (detail) {
+          setFormErrors((prev) => ({
+            ...prev,
+            _: typeof detail === 'string'
+              ? detail
+              : JSON.stringify(detail),
+          }))
+        }
+      })
+      .finally(() => {
+        setFormLoading(false)
+      })
+  }
 
 
   function handleDelete(emp) {
@@ -768,7 +898,6 @@ function handleSubmit(e) {
                   value={form.primary_skills.map(
                     (item) => item.skill
                   )}
-                  
                   onChange={handleSkillsChange}
                   renderInput={(params) => (
                     <TextField
@@ -779,11 +908,12 @@ function handleSubmit(e) {
                   )}
                 />
               </div>
+
               {formErrors.primary_skills && (
-              <div className="text-danger small mt-1">
-                {formErrors.primary_skills}
-            </div>
-                  )}
+                <div className="text-danger small mt-1">
+                  {formErrors.primary_skills}
+                </div>
+              )}
 
 
               {showCustomSkillInput && (
@@ -858,6 +988,117 @@ function handleSubmit(e) {
                   ))}
                 </div>
               )}
+
+
+              {/* Platform Tools with individual proficiency */}
+
+              <div className="mt-4">
+                <div className="mb-3">
+                  <label className="form-label fw-semibold">
+                    Platform Tools <span style={{ color: 'red' }}>*</span>
+                  </label>
+
+                  <Autocomplete
+                    multiple
+                    options={[...PLATFORM_TOOL_OPTIONS, 'Other']}
+                    value={form.platform_tools}
+                    onChange={handlePlatformToolsChange}
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        placeholder="Select Platform Tools"
+                        size="small"
+                      />
+                    )}
+                  />
+
+                  {formErrors.platform_tools && (
+                    <div className="text-danger small mt-1">
+                      {formErrors.platform_tools}
+                    </div>
+                  )}
+                </div>
+
+
+                {showCustomPlatformToolInput && (
+                  <div className="mb-3">
+                    <label className="form-label fw-semibold">
+                      Add Other Platform Tool
+                    </label>
+
+                    <div className="d-flex gap-2">
+                      <input
+                        type="text"
+                        className="form-control"
+                        placeholder="Enter a custom platform tool"
+                        value={customPlatformTool}
+                        onChange={(e) =>
+                          setCustomPlatformTool(e.target.value)
+                        }
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault()
+                            addCustomPlatformTool()
+                          }
+                        }}
+                      />
+
+                      <button
+                        type="button"
+                        className="btn btn-outline-primary"
+                        onClick={addCustomPlatformTool}
+                      >
+                        Add
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+
+                {form.platform_tools.length > 0 && (
+                  <div className="mt-3">
+                    <label className="form-label fw-semibold">
+                      Platform Tools Proficiency
+                    </label>
+
+                    {form.platform_tools.map((tool, index) => (
+                      <div
+                        key={tool}
+                        className="row align-items-center mb-2"
+                      >
+                        <div className="col-md-6">
+                          <span className="fw-medium">
+                            {tool}
+                          </span>
+                        </div>
+
+                        <div className="col-md-6">
+                          <select
+                            className="form-select"
+                            value={
+                              form.platform_tools_proficiency[index] ||
+                              'Beginner'
+                            }
+                            onChange={(e) =>
+                              handlePlatformToolProficiencyChange(
+                                tool,
+                                e.target.value
+                              )
+                            }
+                          >
+                            {PROFICIENCY_OPTIONS.map((level) => (
+                              <option key={level} value={level}>
+                                {level}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
             </div>
 
 

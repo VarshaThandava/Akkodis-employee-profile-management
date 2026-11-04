@@ -34,6 +34,13 @@ class Employee(Base):
     primary_skills: Mapped[list[dict] | None] = mapped_column(
     JSON, nullable=True, default=list
     )
+    platform_tools: Mapped[list[str] | None] = mapped_column(
+    JSON, nullable=True, default=list
+    )
+
+    platform_tools_proficiency: Mapped[list[str] | None] = mapped_column(
+    JSON, nullable=True, default=list
+    )
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
