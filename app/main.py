@@ -15,7 +15,7 @@ from sqlalchemy.exc import IntegrityError, OperationalError
 from app.core.config import get_settings
 from app.core.database import Base, engine
 from app.core.logging_config import setup_logging
-from app.models import Employee, Attendance
+from app.models import Employee, Attendance, User
 from app.routes import api_router, health, auth
 from app.utils.exceptions import (
     AppException,

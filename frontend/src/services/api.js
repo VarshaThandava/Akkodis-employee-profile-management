@@ -6,6 +6,19 @@ const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 })
 
+api.interceptors.request.use((config) => {
+  const token =
+    localStorage.getItem("hrmsToken") ||
+    sessionStorage.getItem("hrmsToken");
+
+ if (token) {
+  config.headers = config.headers || {};
+  config.headers.Authorization = `Bearer ${token}`;
+}
+
+  return config;
+});
+
 export function setupApiErrorHandler(showError) {
   api.interceptors.response.use(
     (response) => response,
@@ -27,6 +40,10 @@ export function setupApiErrorHandler(showError) {
 // Employees
 export function getEmployees(params = {}) {
   return api.get('/employees', { params })
+}
+
+export function getMyEmployeeProfile(employeeId) {
+  return api.get(`/employees/by-employee-id/${employeeId}`);
 }
 
 export function getEmployee(id) {

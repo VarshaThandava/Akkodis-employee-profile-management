@@ -123,6 +123,7 @@ export default function LoginPage({ onLoggedIn }) {
         name: data.name,
         role: data.role,
         email: cleanEmail,
+        employee_id: data.employee_id || null,
       };
 
 
@@ -153,14 +154,25 @@ export default function LoginPage({ onLoggedIn }) {
       }
 
 
+      // if (onLoggedIn) {
+
+      //   onLoggedIn(user);
+
+      // } else {
+
+      //   window.location.href = "/dashboard";
+
+      // }
+
       if (onLoggedIn) {
-
         onLoggedIn(user);
-
       } else {
+        const dashboardPath =
+          user.role === "HR Admin"
+            ? "/dashboard"
+            : "/employee-dashboard";
 
-        window.location.href = "/dashboard";
-
+        window.location.href = dashboardPath;
       }
 
 
