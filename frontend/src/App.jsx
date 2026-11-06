@@ -8,6 +8,7 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Employees from "./pages/Employees";
 import EmployeeDashboard from "./pages/EmployeeDashboard";
+import Register from "./pages/Register";
 
 // Read the logged-in user from browser storage.
 function getLoggedInUser() {
@@ -54,6 +55,9 @@ function AppRoutes() {
       <Routes>
         {/* Login */}
         <Route path="/login" element={<Login />} />
+        {/* Employee Registration */}
+        <Route path="/register" element={<Register />} />
+        
 
         {/* Protected application layout */}
         <Route

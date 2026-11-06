@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import {
   Alert,
@@ -41,13 +42,16 @@ const inputSx = {
 
 
 export default function LoginPage({ onLoggedIn }) {
-
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  
+
+  
 
 
   const handleLogin = async (e) => {
@@ -834,6 +838,28 @@ export default function LoginPage({ onLoggedIn }) {
             Authorized employees only
 
           </Divider>
+
+          <Box sx={{ textAlign: "center", mt: 2 }}>
+  <Typography
+    component="span"
+    sx={{ fontSize: 14, color: "text.secondary" }}
+  >
+    New employee?{" "}
+  </Typography>
+
+  <Link
+    component="button"
+    type="button"
+    underline="hover"
+    onClick={() => navigate("/register")}
+    sx={{
+      fontSize: 14,
+      fontWeight: 600,
+    }}
+  >
+    Create an account
+  </Link>
+</Box>
 
 
         </Paper>

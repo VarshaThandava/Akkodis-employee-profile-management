@@ -1,6 +1,8 @@
-"""Demo authentication and role-based authorization dependencies."""
+
+"""Demo and session-based authentication and role authorization."""
 
 from dataclasses import dataclass
+from datetime import datetime, timezone
 import secrets
 
 from fastapi import Depends, HTTPException, status
@@ -9,7 +11,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.models.employee import Employee
-from app.routes.auth import DEMO_USERS
+from app.routes.auth import DEMO_USERS, ACTIVE_SESSIONS
 
 bearer_scheme = HTTPBearer(auto_error=False)
 
@@ -36,8 +38,8 @@ def get_current_user(
 
     token = credentials.credentials
 
-    # Validate the temporary demo token.
-    user_data = next(
+    # 1. Validate existing hardcoded demo tokens.
+    demo_user = next(
         (
             user
             for user in DEMO_USERS.values()
@@ -46,40 +48,76 @@ def get_current_user(
         None,
     )
 
-    if not user_data:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired token",
-        )
+    if demo_user:
+        employee_id = demo_user.get("employee_id")
+        employee_record_id = None
 
-    employee_id = user_data.get("employee_id")
-    employee_record_id = None
-
-    # Link Employee login to the existing employee database record.
-    if user_data["role"] == "Employee":
-        employee = (
-            db.query(Employee)
-            .filter(Employee.employee_id == employee_id)
-            .first()
-        )
-
-        if not employee:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Employee record not found",
+        if demo_user["role"] == "Employee":
+            employee = (
+                db.query(Employee)
+                .filter(Employee.employee_id == employee_id)
+                .first()
             )
 
-        employee_record_id = employee.id
+            if not employee:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Employee record not found",
+                )
+
+            employee_record_id = employee.id
+
+        return CurrentUser(
+            email=next(
+                email
+                for email, user in DEMO_USERS.items()
+                if user is demo_user
+            ),
+            name=demo_user["name"],
+            role=demo_user["role"],
+            employee_id=employee_id,
+            employee_record_id=employee_record_id,
+        )
+
+    # 2. Validate newly registered employee session tokens.
+    session = ACTIVE_SESSIONS.get(token)
+
+    if not session:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired session",
+        )
+
+    # Check session expiration.
+    if datetime.now(timezone.utc) >= session["expires_at"]:
+        ACTIVE_SESSIONS.pop(token, None)
+
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Session expired. Please log in again.",
+        )
+
+    # Retrieve the employee associated with the session.
+    employee = (
+        db.query(Employee)
+        .filter(Employee.id == session["employee_record_id"])
+        .first()
+    )
+
+    if not employee:
+        ACTIVE_SESSIONS.pop(token, None)
+
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Employee record not found",
+        )
 
     return CurrentUser(
-        email=next(
-            email for email, user in DEMO_USERS.items()
-            if user is user_data
-        ),
-        name=user_data["name"],
-        role=user_data["role"],
-        employee_id=employee_id,
-        employee_record_id=employee_record_id,
+        email=employee.email,
+        name=employee.full_name,
+        role="Employee",
+        employee_id=employee.employee_id,
+        employee_record_id=employee.id,
     )
 
 

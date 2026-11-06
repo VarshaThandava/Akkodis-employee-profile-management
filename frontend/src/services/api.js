@@ -61,6 +61,8 @@ export function updateEmployee(id, payload) {
 export function deleteEmployee(id) {
   return api.delete(`/employees/${id}`)
 }
+export const registerEmployee = (payload) =>
+  api.post("/auth/register", payload);
 
 // Attendance
 export function getAttendanceByEmployee(employeeId, params = {}) {
